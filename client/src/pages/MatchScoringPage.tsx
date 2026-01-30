@@ -30,6 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { getSetBasedDisplay } from '@/utils/scoreDisplay'
 
 export function MatchScoringPage() {
   const { slug, matchId } = useParams<{ slug: string; matchId: string }>()
@@ -127,6 +128,30 @@ export function MatchScoringPage() {
   const isPaused = match.status === 'PAUSED'
   const isCompleted = match.status === 'COMPLETED'
 
+  // Get set-based display data
+  const setDisplay = getSetBasedDisplay(
+    {
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      homePeriodScores: match.homePeriodScores ?? [],
+      awayPeriodScores: match.awayPeriodScores ?? [],
+      status: match.status,
+    },
+    {
+      pointsToWinPeriod: sport.pointsToWinPeriod ?? null,
+      periodName: sport.periodName,
+    }
+  )
+
+  // For set-based sports, show current set score; otherwise show total
+  const currentSetIndex = match.currentPeriod - 1
+  const displayHomeScore = setDisplay.isSetBased
+    ? (match.homePeriodScores?.[currentSetIndex] ?? 0)
+    : match.homeScore
+  const displayAwayScore = setDisplay.isSetBased
+    ? (match.awayPeriodScores?.[currentSetIndex] ?? 0)
+    : match.awayScore
+
   const handleScore = async (teamSide: 'HOME' | 'AWAY', points: number, action: string) => {
     await scoreMutation.mutateAsync({ teamSide, points, action })
   }
@@ -179,12 +204,27 @@ export function MatchScoringPage() {
       {/* Scoreboard */}
       <Card>
         <CardContent className="pt-6">
+          {/* Sets won indicator for set-based sports */}
+          {setDisplay.isSetBased && (
+            <div className="mb-4 flex justify-center gap-8 text-center">
+              <div>
+                <span className="text-2xl font-bold">{setDisplay.setsWon.home}</span>
+              </div>
+              <div className="text-sm text-muted-foreground self-center">
+                {sport.periodName}s Won
+              </div>
+              <div>
+                <span className="text-2xl font-bold">{setDisplay.setsWon.away}</span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <h2 className="text-lg font-semibold">
                 {match.homeTeam?.name ?? 'TBD'}
               </h2>
-              <div className="mt-2 text-5xl font-bold">{match.homeScore}</div>
+              <div className="mt-2 text-5xl font-bold">{displayHomeScore}</div>
             </div>
             <div className="flex flex-col items-center justify-center">
               <span className="text-sm text-muted-foreground">
@@ -201,14 +241,14 @@ export function MatchScoringPage() {
               <h2 className="text-lg font-semibold">
                 {match.awayTeam?.name ?? 'TBD'}
               </h2>
-              <div className="mt-2 text-5xl font-bold">{match.awayScore}</div>
+              <div className="mt-2 text-5xl font-bold">{displayAwayScore}</div>
             </div>
           </div>
 
           {/* Period scores */}
-          {match.homePeriodScores.length > 0 && (
+          {match.homePeriodScores.length > 1 && (
             <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
-              {match.homePeriodScores.map((score, i) => (
+              {match.homePeriodScores.slice(0, -1).map((score, i) => (
                 <span key={i}>
                   {sport.periodName} {i + 1}: {score}-
                   {match.awayPeriodScores[i] ?? 0}

@@ -135,10 +135,14 @@ export const CreateMatchSchema = z.object({
 })
 
 export const UpdateMatchSchema = z.object({
-  homeTeamId: z.string().optional(),
-  awayTeamId: z.string().optional(),
+  homeTeamId: z.string().nullable().optional(),
+  awayTeamId: z.string().nullable().optional(),
+  groupId: z.string().nullable().optional(),
   status: MatchStatusSchema.optional(),
-  scheduledAt: z.string().datetime().optional(),
+  scheduledAt: z.string().datetime().nullable().optional(),
+  stage: MatchStageSchema.optional(),
+  round: z.number().int().positive().optional(),
+  matchNumber: z.number().int().positive().optional(),
 })
 
 // Score event schemas

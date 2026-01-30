@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getSetBasedDisplay } from '@/utils/scoreDisplay'
 
 export function MatchViewPage() {
   const { slug, matchId } = useParams<{ slug: string; matchId: string }>()
@@ -64,6 +65,21 @@ export function MatchViewPage() {
   const sport = match.tournament.sport
   const isLive = match.status === 'LIVE'
   const isCompleted = match.status === 'COMPLETED'
+
+  // Get set-based display data
+  const setDisplay = getSetBasedDisplay(
+    {
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      homePeriodScores: match.homePeriodScores ?? [],
+      awayPeriodScores: match.awayPeriodScores ?? [],
+      status: match.status,
+    },
+    {
+      pointsToWinPeriod: sport.pointsToWinPeriod ?? null,
+      periodName: sport.periodName,
+    }
+  )
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -162,22 +178,36 @@ export function MatchViewPage() {
 
           {/* Big Score Display */}
           <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-            <div
-              className={`text-7xl font-bold ${
-                isLive ? 'text-red-500' : ''
-              } transition-all duration-300`}
-            >
-              {match.homeScore}
+            <div className="flex flex-col items-center">
+              <div
+                className={`text-7xl font-bold ${
+                  isLive ? 'text-red-500' : ''
+                } transition-all duration-300`}
+              >
+                {setDisplay.isSetBased ? setDisplay.setsWon.home : match.homeScore}
+              </div>
+              {setDisplay.isSetBased && setDisplay.currentSetScore !== null && (
+                <div className="mt-1 text-2xl text-muted-foreground">
+                  ({setDisplay.currentSetScore.home})
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-center text-3xl text-muted-foreground">
               -
             </div>
-            <div
-              className={`text-7xl font-bold ${
-                isLive ? 'text-red-500' : ''
-              } transition-all duration-300`}
-            >
-              {match.awayScore}
+            <div className="flex flex-col items-center">
+              <div
+                className={`text-7xl font-bold ${
+                  isLive ? 'text-red-500' : ''
+                } transition-all duration-300`}
+              >
+                {setDisplay.isSetBased ? setDisplay.setsWon.away : match.awayScore}
+              </div>
+              {setDisplay.isSetBased && setDisplay.currentSetScore !== null && (
+                <div className="mt-1 text-2xl text-muted-foreground">
+                  ({setDisplay.currentSetScore.away})
+                </div>
+              )}
             </div>
           </div>
 

@@ -123,6 +123,14 @@ async function nextPeriod(matchId: string): Promise<MatchWithRelations> {
   return response.data.data
 }
 
+// Delete match
+async function deleteMatch(matchId: string): Promise<void> {
+  const response = await api.delete<ApiResponse<void>>(`/matches/${matchId}`)
+  if (!response.data.success) {
+    throw new Error(response.data.error ?? 'Failed to delete match')
+  }
+}
+
 // Hooks
 export function useMatch(matchId: string) {
   return useQuery({
@@ -147,6 +155,24 @@ export function useUpdateMatch(matchId: string, tournamentSlug?: string) {
   return useMutation({
     mutationFn: (data: UpdateMatch) => updateMatch(matchId, data),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
+      if (tournamentSlug) {
+        void queryClient.invalidateQueries({
+          queryKey: tournamentKeys.detail(tournamentSlug),
+        })
+      }
+    },
+  })
+}
+
+// Hook for updating any match (takes matchId at mutation time)
+export function useUpdateMatchById(tournamentSlug?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ matchId, data }: { matchId: string; data: UpdateMatch }) =>
+      updateMatch(matchId, data),
+    onSuccess: (_, { matchId }) => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
       if (tournamentSlug) {
         void queryClient.invalidateQueries({
@@ -234,6 +260,22 @@ export function useNextPeriod(matchId: string) {
     mutationFn: () => nextPeriod(matchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
+    },
+  })
+}
+
+export function useDeleteMatch(matchId: string, tournamentSlug?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => deleteMatch(matchId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
+      if (tournamentSlug) {
+        void queryClient.invalidateQueries({
+          queryKey: tournamentKeys.detail(tournamentSlug),
+        })
+      }
     },
   })
 }

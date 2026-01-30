@@ -6,6 +6,7 @@ import type {
   UpdateTournament,
   Team,
   CreateTeam,
+  CreateMatch,
   GenerateMatches,
 } from '@shared/schemas'
 
@@ -19,6 +20,7 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
     periodName: string
     scoreIncrements: number[]
     scoreLabels: string[]
+    pointsToWinPeriod: number | null
   }
   teams: Team[]
   groups: Array<{
@@ -32,6 +34,9 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
     awayTeamId: string | null
     homeScore: number
     awayScore: number
+    homePeriodScores: number[]
+    awayPeriodScores: number[]
+    currentPeriod: number
     status: string
     stage: string
     round: number
@@ -173,6 +178,20 @@ async function deleteTeam(slug: string, teamId: string): Promise<void> {
   await api.delete(`/tournaments/${slug}/teams/${teamId}`)
 }
 
+// Create match
+async function createMatch(
+  slug: string,
+  data: CreateMatch
+): Promise<TournamentWithRelations['matches'][number]> {
+  const response = await api.post<
+    ApiResponse<TournamentWithRelations['matches'][number]>
+  >(`/tournaments/${slug}/matches`, data)
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? 'Failed to create match')
+  }
+  return response.data.data
+}
+
 // Hooks
 export function useTournaments(params?: {
   page?: number
@@ -273,6 +292,17 @@ export function useDeleteTeam(slug: string) {
 
   return useMutation({
     mutationFn: (teamId: string) => deleteTeam(slug, teamId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(slug) })
+    },
+  })
+}
+
+export function useCreateMatch(slug: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateMatch) => createMatch(slug, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(slug) })
     },

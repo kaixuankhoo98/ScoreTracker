@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Settings, Share2, Users, Calendar } from 'lucide-react'
 import { useTournament } from '@/api/tournaments'
+import { useTournamentSubscription } from '@/hooks/useTournamentSubscription'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -25,6 +27,24 @@ const statusColors: Record<string, 'default' | 'secondary' | 'success' | 'warnin
 export function TournamentPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: tournament, isLoading, error } = useTournament(slug ?? '')
+
+  // Subscribe to live updates for this tournament
+  const { subscribe, unsubscribe } = useTournamentSubscription(
+    tournament?.id ?? '',
+    slug ?? ''
+  )
+
+  // Set up subscription when tournament is loaded
+  useEffect(() => {
+    if (tournament?.id) {
+      const cleanup = subscribe()
+      return () => {
+        cleanup?.()
+        unsubscribe()
+      }
+    }
+    return undefined
+  }, [tournament?.id, subscribe, unsubscribe])
 
   const handleShare = async () => {
     const url = window.location.href

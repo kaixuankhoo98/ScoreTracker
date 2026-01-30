@@ -9,6 +9,7 @@ import type {
   MatchEndedPayload,
   MatchPausedPayload,
   PeriodChangedPayload,
+  TournamentMatchUpdatePayload,
 } from '../../../shared/src/socket-events.js'
 
 let io: Server<ClientToServerEvents, ServerToClientEvents> | null = null
@@ -90,4 +91,8 @@ export function broadcastMatchPaused(matchId: string, data: MatchPausedPayload) 
 
 export function broadcastPeriodChanged(matchId: string, data: PeriodChangedPayload) {
   getIO().to(`match:${matchId}`).emit('period_changed', data)
+}
+
+export function broadcastTournamentMatchUpdate(tournamentId: string, data: TournamentMatchUpdatePayload) {
+  getIO().to(`tournament:${tournamentId}`).emit('tournament_match_update', data)
 }

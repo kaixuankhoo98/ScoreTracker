@@ -11,7 +11,9 @@ import {
   useDeleteTeam,
   useGenerateMatches,
   useUpdateTournament,
+  useCreateMatch,
 } from '@/api/tournaments'
+import { useUpdateMatchById } from '@/api/matches'
 import { useTournamentAuth } from '@/hooks/useTournamentAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +36,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { MatchFormDialog } from '@/components/admin/MatchFormDialog'
+import { MatchAdminCard } from '@/components/admin/MatchAdminCard'
+import type { CreateMatch, MatchStage } from '@shared/schemas'
 
 const teamFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -62,9 +67,22 @@ export function AdminPage() {
   const deleteTeamMutation = useDeleteTeam(slug ?? '')
   const generateMatchesMutation = useGenerateMatches(slug ?? '')
   const updateTournamentMutation = useUpdateTournament(slug ?? '')
+  const createMatchMutation = useCreateMatch(slug ?? '')
+  const updateMatchMutation = useUpdateMatchById(slug ?? '')
 
   const [addTeamOpen, setAddTeamOpen] = useState(false)
   const [bulkAddOpen, setBulkAddOpen] = useState(false)
+  const [matchFormOpen, setMatchFormOpen] = useState(false)
+  const [editingMatch, setEditingMatch] = useState<{
+    id: string
+    homeTeamId?: string
+    awayTeamId?: string
+    stage: MatchStage
+    round: number
+    matchNumber: number
+    scheduledAt?: string | null
+    status: string
+  } | null>(null)
 
   // Try to restore session on mount
   useState(() => {
@@ -130,6 +148,21 @@ export function AdminPage() {
 
   const onStartTournament = async () => {
     await updateTournamentMutation.mutateAsync({ status: 'IN_PROGRESS' })
+  }
+
+  const onCreateMatch = async (data: CreateMatch) => {
+    await createMatchMutation.mutateAsync(data)
+    setMatchFormOpen(false)
+  }
+
+  const onEditMatch = (match: typeof editingMatch) => {
+    setEditingMatch(match)
+    setMatchFormOpen(true)
+  }
+
+  const onCloseMatchForm = () => {
+    setMatchFormOpen(false)
+    setEditingMatch(null)
   }
 
   if (isLoading) {
@@ -382,58 +415,91 @@ export function AdminPage() {
         {/* Matches */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Matches ({tournament.matches.length})</CardTitle>
-            <CardDescription>
-              Click on a match to manage scoring
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Matches ({tournament.matches.length})</CardTitle>
+                <CardDescription>
+                  Click on a match to manage scoring. Hover over scheduled matches to edit or delete.
+                </CardDescription>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingMatch(null)
+                  setMatchFormOpen(true)
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Match
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {tournament.matches.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                No matches yet. Add teams and generate matches.
+                No matches yet. Add teams and generate matches, or create a match manually.
               </p>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {tournament.matches.map((match) => (
-                  <Link
+                  <MatchAdminCard
                     key={match.id}
-                    to={`/tournaments/${slug ?? ''}/admin/matches/${match.id}`}
-                  >
-                    <div className="rounded-lg border p-3 transition-colors hover:bg-muted/50">
-                      <div className="flex items-center justify-between">
-                        <Badge
-                          variant={
-                            match.status === 'LIVE'
-                              ? 'live'
-                              : match.status === 'COMPLETED'
-                                ? 'success'
-                                : 'secondary'
-                          }
-                        >
-                          {match.status}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          #{match.matchNumber}
-                        </span>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex justify-between">
-                          <span>{match.homeTeam?.name ?? 'TBD'}</span>
-                          <span className="font-bold">{match.homeScore}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>{match.awayTeam?.name ?? 'TBD'}</span>
-                          <span className="font-bold">{match.awayScore}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
+                    match={match}
+                    tournamentSlug={slug ?? ''}
+                    onEdit={onEditMatch}
+                  />
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Match Form Dialog */}
+      <MatchFormDialog
+        open={matchFormOpen}
+        onOpenChange={onCloseMatchForm}
+        onSubmit={async (data) => {
+          if (editingMatch) {
+            // Update existing match
+            await updateMatchMutation.mutateAsync({
+              matchId: editingMatch.id,
+              data: {
+                homeTeamId: data.homeTeamId ?? null,
+                awayTeamId: data.awayTeamId ?? null,
+                stage: data.stage,
+                round: data.round,
+                matchNumber: data.matchNumber,
+                scheduledAt: data.scheduledAt ?? null,
+              },
+            })
+            setMatchFormOpen(false)
+            setEditingMatch(null)
+          } else {
+            await onCreateMatch(data)
+          }
+        }}
+        teams={tournament.teams}
+        isPending={createMatchMutation.isPending || updateMatchMutation.isPending}
+        mode={editingMatch ? 'edit' : 'create'}
+        defaultValues={
+          editingMatch !== null
+            ? {
+                homeTeamId: editingMatch.homeTeamId,
+                awayTeamId: editingMatch.awayTeamId,
+                stage: editingMatch.stage,
+                round: editingMatch.round,
+                matchNumber: editingMatch.matchNumber,
+                scheduledAt: editingMatch.scheduledAt ?? undefined,
+              }
+            : {}
+        }
+        nextMatchNumber={
+          tournament.matches.length > 0
+            ? Math.max(...tournament.matches.map((m) => m.matchNumber)) + 1
+            : 1
+        }
+      />
     </div>
   )
 }

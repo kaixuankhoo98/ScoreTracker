@@ -53,7 +53,7 @@ if (NODE_ENV === 'production') {
   app.use(express.static(publicPath))
 
   // SPA fallback - serve index.html for client-side routing
-  app.get('*', (req, res, next) => {
+  app.get('/{*splat}', (req, res, next) => {
     // Skip API routes
     if (req.path.startsWith('/api')) {
       next()

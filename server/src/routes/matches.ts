@@ -14,6 +14,7 @@ import {
   broadcastMatchEnded,
   broadcastMatchPaused,
   broadcastPeriodChanged,
+  broadcastTournamentMatchUpdate,
 } from '../socket/server.js'
 
 const router = Router({ mergeParams: true })
@@ -219,6 +220,18 @@ router.post('/:matchId/start', async (req, res) => {
       startedAt: startedAt.toISOString(),
     })
 
+    // Broadcast to tournament room
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
+    })
+
     res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Error starting match:', error)
@@ -270,6 +283,18 @@ router.post('/:matchId/pause', async (req, res) => {
     broadcastMatchPaused(match.id, {
       matchId: match.id,
       status: 'PAUSED',
+    })
+
+    // Broadcast to tournament room
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
     })
 
     res.json({ success: true, data: updated })
@@ -336,6 +361,18 @@ router.post('/:matchId/end', async (req, res) => {
       homeScore: match.homeScore,
       awayScore: match.awayScore,
       endedAt: endedAt.toISOString(),
+    })
+
+    // Broadcast to tournament room
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
     })
 
     res.json({ success: true, data: updated })
@@ -446,6 +483,18 @@ router.post('/:matchId/score', async (req, res) => {
       awayPeriodScores: updated.awayPeriodScores,
     })
 
+    // Broadcast to tournament room for live updates on tournament page
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
+    })
+
     res.json({ success: true, data: { match: updated, event: scoreEvent } })
   } catch (error) {
     console.error('Error adding score:', error)
@@ -546,10 +595,69 @@ router.post('/:matchId/undo', async (req, res) => {
       status: updated.status,
     })
 
+    // Broadcast to tournament room
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
+    })
+
     res.json({ success: true, data: updated })
   } catch (error) {
     console.error('Error undoing score:', error)
     res.status(500).json({ success: false, error: 'Failed to undo score' })
+  }
+})
+
+// DELETE /api/matches/:matchId - Delete match (admin only)
+router.delete('/:matchId', async (req, res) => {
+  try {
+    const match = await prisma.match.findUnique({
+      where: { id: req.params['matchId'] },
+      include: { tournament: true },
+    })
+
+    if (!match) {
+      res.status(404).json({ success: false, error: 'Match not found' })
+      return
+    }
+
+    // Check admin password
+    const password = req.headers['x-tournament-password']
+    if (typeof password !== 'string') {
+      res.status(401).json({ success: false, error: 'Admin access required' })
+      return
+    }
+
+    const bcrypt = await import('bcrypt')
+    const isValid = await bcrypt.compare(password, match.tournament.adminPasswordHash)
+    if (!isValid) {
+      res.status(401).json({ success: false, error: 'Invalid password' })
+      return
+    }
+
+    // Only allow deleting SCHEDULED matches
+    if (match.status !== 'SCHEDULED') {
+      res.status(400).json({
+        success: false,
+        error: 'Only scheduled matches can be deleted',
+      })
+      return
+    }
+
+    await prisma.match.delete({
+      where: { id: match.id },
+    })
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting match:', error)
+    res.status(500).json({ success: false, error: 'Failed to delete match' })
   }
 })
 
@@ -608,6 +716,18 @@ router.post('/:matchId/next-period', async (req, res) => {
       currentPeriod: newPeriod,
       homePeriodScores,
       awayPeriodScores,
+    })
+
+    // Broadcast to tournament room
+    broadcastTournamentMatchUpdate(match.tournamentId, {
+      tournamentId: match.tournamentId,
+      matchId: match.id,
+      homeScore: updated.homeScore,
+      awayScore: updated.awayScore,
+      homePeriodScores: updated.homePeriodScores,
+      awayPeriodScores: updated.awayPeriodScores,
+      currentPeriod: updated.currentPeriod,
+      status: updated.status,
     })
 
     res.json({ success: true, data: updated })

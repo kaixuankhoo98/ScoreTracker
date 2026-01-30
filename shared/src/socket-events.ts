@@ -17,6 +17,7 @@ export interface ServerToClientEvents {
   match_paused: (data: MatchPausedPayload) => void
   period_changed: (data: PeriodChangedPayload) => void
   tournament_update: (data: TournamentUpdatePayload) => void
+  tournament_match_update: (data: TournamentMatchUpdatePayload) => void
   error: (data: ErrorPayload) => void
 }
 
@@ -68,6 +69,17 @@ export interface PeriodChangedPayload {
 export interface TournamentUpdatePayload {
   tournamentId: string
   matches?: Partial<Match>[]
+}
+
+export interface TournamentMatchUpdatePayload {
+  tournamentId: string
+  matchId: string
+  homeScore: number
+  awayScore: number
+  homePeriodScores: number[]
+  awayPeriodScores: number[]
+  currentPeriod: number
+  status: MatchStatus
 }
 
 export interface ErrorPayload {

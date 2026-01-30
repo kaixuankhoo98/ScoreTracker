@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Sport {
+  id              String       @id @default(cuid())
+  name            String       @unique
+  slug            String       @unique
+  description     String?
+  periods         Int          // Number of periods (4 for basketball, 5 for volleyball sets, 2 for soccer)
+  periodName      String       // "Quarter", "Set", "Half"
+  scoreIncrements Int[]        // [1, 2, 3] for basketball
+  scoreLabels     String[]     // ["Free Throw", "2-Point", "3-Point"]
+  pointsToWinPeriod Int?       // For volleyball (25 for sets 1-4, 15 for set 5)
+  canTie          Boolean      @default(false)
+  icon            String?      // Icon name from lucide-react
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tournaments     Tournament[]
+
+  @@map("sports")
+}
+
+model Tournament {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  description     String?
+  sportId         String
+  sport           Sport            @relation(fields: [sportId], references: [id])
+  format          TournamentFormat
+  status          TournamentStatus @default(DRAFT)
+  adminPasswordHash String
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  teams           Team[]
+  matches         Match[]
+  groups          TournamentGroup[]
+
+  @@map("tournaments")
+}
+
+model TournamentGroup {
+  id              String     @id @default(cuid())
+  name            String     // "Group A", "Group B"
+  tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  teams           Team[]
+  matches         Match[]
+
+  @@unique([tournamentId, name])
+  @@map("tournament_groups")
+}
+
+model Team {
+  id              String           @id @default(cuid())
+  name            String
+  shortName       String?          // 3-4 letter abbreviation
+  tournamentId    String
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  groupId         String?
+  group           TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  seed            Int?             // For seeded brackets
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  homeMatches     Match[]          @relation("HomeTeam")
+  awayMatches     Match[]          @relation("AwayTeam")
+  wonMatches      Match[]          @relation("WinnerTeam")
+
+  @@unique([tournamentId, name])
+  @@map("teams")
+}
+
+model Match {
+  id              String           @id @default(cuid())
+  tournamentId    String
+  tournament      Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  groupId         String?
+  group           TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  homeTeamId      String?
+  homeTeam        Team?            @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: SetNull)
+  awayTeamId      String?
+  awayTeam        Team?            @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: SetNull)
+  winnerId        String?
+  winner          Team?            @relation("WinnerTeam", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  // Scores
+  homeScore       Int              @default(0)
+  awayScore       Int              @default(0)
+  homePeriodScores Int[]           @default([])
+  awayPeriodScores Int[]           @default([])
+  currentPeriod   Int              @default(1)
+
+  // Match info
+  round           Int              @default(1)    // Round number in bracket
+  matchNumber     Int              @default(1)    // Match number within round
+  stage           MatchStage       @default(GROUP) // GROUP, QUARTERFINAL, SEMIFINAL, FINAL, etc.
+  status          MatchStatus      @default(SCHEDULED)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  scoreEvents     ScoreEvent[]
+
+  @@map("matches")
+}
+
+model ScoreEvent {
+  id              String       @id @default(cuid())
+  matchId         String
+  match           Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamSide        TeamSide     // HOME or AWAY
+  points          Int          // Points added
+  period          Int          // Which period the score happened
+  action          String       // "Free Throw", "2-Point", "Goal", etc.
+  undone          Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  @@map("score_events")
+}
+
+enum TournamentFormat {
+  ROUND_ROBIN
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  GROUP_KNOCKOUT
+}
+
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStage {
+  GROUP
+  ROUND_OF_16
+  QUARTERFINAL
+  SEMIFINAL
+  THIRD_PLACE
+  FINAL
+}
+
+enum TeamSide {
+  HOME
+  AWAY
+}

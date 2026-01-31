@@ -16,13 +16,7 @@ export const TournamentStatusSchema = z.enum([
   'CANCELLED',
 ])
 
-export const MatchStatusSchema = z.enum([
-  'SCHEDULED',
-  'LIVE',
-  'PAUSED',
-  'COMPLETED',
-  'CANCELLED',
-])
+export const MatchStatusSchema = z.enum(['SCHEDULED', 'LIVE', 'PAUSED', 'COMPLETED', 'CANCELLED'])
 
 export const MatchStageSchema = z.enum([
   'GROUP',
@@ -78,10 +72,10 @@ export const TournamentSchema = z.object({
   sportId: z.string(),
   format: TournamentFormatSchema,
   status: TournamentStatusSchema,
-  startDate: z.string().datetime().nullable(),
-  endDate: z.string().datetime().nullable(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  startDate: z.iso.datetime().nullable(),
+  endDate: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 })
 
 export const CreateTournamentSchema = z.object({
@@ -90,16 +84,16 @@ export const CreateTournamentSchema = z.object({
   sportId: z.string(),
   format: TournamentFormatSchema,
   adminPassword: z.string().min(4).max(100),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.iso.datetime().optional(),
+  endDate: z.iso.datetime().optional(),
 })
 
 export const UpdateTournamentSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional(),
   status: TournamentStatusSchema.optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.iso.datetime().optional(),
+  endDate: z.iso.datetime().optional(),
 })
 
 // Match schemas
@@ -119,9 +113,9 @@ export const MatchSchema = z.object({
   matchNumber: z.number().int().positive(),
   stage: MatchStageSchema,
   status: MatchStatusSchema,
-  scheduledAt: z.string().datetime().nullable(),
-  startedAt: z.string().datetime().nullable(),
-  endedAt: z.string().datetime().nullable(),
+  scheduledAt: z.iso.datetime().nullable(),
+  startedAt: z.iso.datetime().nullable(),
+  endedAt: z.iso.datetime().nullable(),
 })
 
 export const CreateMatchSchema = z.object({
@@ -131,7 +125,7 @@ export const CreateMatchSchema = z.object({
   round: z.number().int().positive().optional(),
   matchNumber: z.number().int().positive().optional(),
   stage: MatchStageSchema.optional(),
-  scheduledAt: z.string().datetime().optional(),
+  scheduledAt: z.iso.datetime().optional(),
 })
 
 export const UpdateMatchSchema = z.object({
@@ -139,7 +133,7 @@ export const UpdateMatchSchema = z.object({
   awayTeamId: z.string().nullable().optional(),
   groupId: z.string().nullable().optional(),
   status: MatchStatusSchema.optional(),
-  scheduledAt: z.string().datetime().nullable().optional(),
+  scheduledAt: z.iso.datetime().nullable().optional(),
   stage: MatchStageSchema.optional(),
   round: z.number().int().positive().optional(),
   matchNumber: z.number().int().positive().optional(),
@@ -154,7 +148,7 @@ export const ScoreEventSchema = z.object({
   period: z.number().int().positive(),
   action: z.string(),
   undone: z.boolean(),
-  createdAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
 })
 
 export const AddScoreSchema = z.object({

@@ -128,7 +128,7 @@ export function generateSingleElimination(teamCount: number): GeneratedTournamen
 export function generateGroupKnockout(
   teamCount: number,
   groupCount: number,
-  advancingPerGroup: number = 2
+  advancingPerGroup = 2
 ): GeneratedTournament {
   const groups: GeneratedGroup[] = []
   const matches: GeneratedMatch[] = []

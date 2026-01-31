@@ -17,9 +17,9 @@ const app = express()
 const httpServer = createServer(app)
 
 // Configuration
-const PORT = parseInt(process.env['PORT'] ?? '3000', 10)
-const NODE_ENV = process.env['NODE_ENV'] ?? 'development'
-const CORS_ORIGINS = (process.env['CORS_ORIGINS'] ?? 'http://localhost:5173')
+const PORT = parseInt(process.env.PORT ?? '3000', 10)
+const NODE_ENV = process.env.NODE_ENV ?? 'development'
+const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
 
@@ -64,17 +64,11 @@ if (NODE_ENV === 'production') {
 }
 
 // Error handler
-app.use(
-  (
-    err: Error,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
-    console.error('Unhandled error:', err)
-    res.status(500).json({ success: false, error: 'Internal server error' })
-  }
-)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Unhandled error:', err)
+  res.status(500).json({ success: false, error: 'Internal server error' })
+})
 
 // 404 handler for API routes
 app.use((req, res) => {
@@ -90,7 +84,7 @@ initializeSocket(httpServer, CORS_ORIGINS)
 
 // Start server
 httpServer.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`Server running on http://localhost:${String(PORT)}`)
   console.log(`Environment: ${NODE_ENV}`)
   if (NODE_ENV !== 'production') {
     console.log(`CORS origins: ${CORS_ORIGINS.join(', ')}`)

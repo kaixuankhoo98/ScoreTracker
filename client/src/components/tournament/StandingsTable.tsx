@@ -3,19 +3,19 @@ import type { Team } from '@shared/schemas'
 
 interface StandingsTableProps {
   teams: Team[]
-  matches: Array<{
+  matches: {
     homeTeamId: string | null
     awayTeamId: string | null
     homeScore: number
     awayScore: number
     status: string
     winner: { id: string } | null
-  }>
-  groups: Array<{
+  }[]
+  groups: {
     id: string
     name: string
     teams: Team[]
-  }>
+  }[]
 }
 
 interface TeamStanding {
@@ -98,11 +98,7 @@ function calculateStandings(
 
 function StandingsTableContent({ standings }: { standings: TeamStanding[] }) {
   if (standings.length === 0) {
-    return (
-      <p className="py-4 text-center text-muted-foreground">
-        No teams in this group
-      </p>
-    )
+    return <p className="py-4 text-center text-muted-foreground">No teams in this group</p>
   }
 
   return (
@@ -184,8 +180,7 @@ export function StandingsTable({ teams, matches, groups }: StandingsTableProps) 
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          No standings to display. Add teams and complete matches to see
-          standings.
+          No standings to display. Add teams and complete matches to see standings.
         </CardContent>
       </Card>
     )

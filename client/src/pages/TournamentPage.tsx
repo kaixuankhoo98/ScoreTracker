@@ -5,13 +5,7 @@ import { useTournament } from '@/api/tournaments'
 import { useTournamentSubscription } from '@/hooks/useTournamentSubscription'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MatchCard } from '@/components/match/MatchCard'
 import { StandingsTable } from '@/components/tournament/StandingsTable'
@@ -30,14 +24,11 @@ export function TournamentPage() {
   const { data: tournament, isLoading, error } = useTournament(slug ?? '')
 
   // Subscribe to live updates for this tournament
-  const { subscribe, unsubscribe } = useTournamentSubscription(
-    tournament?.id ?? '',
-    slug ?? ''
-  )
+  const { subscribe, unsubscribe } = useTournamentSubscription(tournament?.id ?? '', slug ?? '')
 
   // Set up subscription when tournament is loaded
   useEffect(() => {
-    if (tournament?.id) {
+    if (tournament?.id !== undefined && tournament.id.length > 0) {
       const cleanup = subscribe()
       return () => {
         cleanup?.()
@@ -49,7 +40,7 @@ export function TournamentPage() {
 
   const handleShare = async () => {
     const url = window.location.href
-    if (navigator.share !== undefined) {
+    if ('share' in navigator && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: tournament?.name ?? 'Tournament',
@@ -97,10 +88,12 @@ export function TournamentPage() {
   )
 
   // Determine which tabs to show based on tournament format
-  const hasKnockout = knockoutMatches.length > 0 ||
+  const hasKnockout =
+    knockoutMatches.length > 0 ||
     tournament.format === 'SINGLE_ELIMINATION' ||
     tournament.format === 'GROUP_KNOCKOUT'
-  const hasGroups = groupMatches.length > 0 ||
+  const hasGroups =
+    groupMatches.length > 0 ||
     tournament.format === 'GROUP_KNOCKOUT' ||
     tournament.format === 'ROUND_ROBIN'
 
@@ -116,9 +109,7 @@ export function TournamentPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">
-              {tournament.name}
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight">{tournament.name}</h1>
             <Badge variant={statusColors[tournament.status] ?? 'default'}>
               {tournament.status.replace('_', ' ')}
             </Badge>
@@ -208,8 +199,7 @@ export function TournamentPage() {
           {tournament.matches.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                No matches scheduled yet. Add teams and generate matches from
-                the admin panel.
+                No matches scheduled yet. Add teams and generate matches from the admin panel.
               </CardContent>
             </Card>
           ) : (
@@ -295,9 +285,7 @@ export function TournamentPage() {
                 <Card key={team.id}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{team.name}</CardTitle>
-                    {team.shortName !== null && (
-                      <CardDescription>{team.shortName}</CardDescription>
-                    )}
+                    {team.shortName !== null && <CardDescription>{team.shortName}</CardDescription>}
                   </CardHeader>
                 </Card>
               ))}

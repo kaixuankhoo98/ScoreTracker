@@ -27,14 +27,14 @@ router.get('/', loadTournament, async (req, res) => {
       return
     }
 
-    const stage = req.query['stage'] as string | undefined
-    const status = req.query['status'] as string | undefined
-    const round = req.query['round'] as string | undefined
+    const stage = req.query.stage as string | undefined
+    const status = req.query.status as string | undefined
+    const round = req.query.round as string | undefined
 
     const where: Record<string, unknown> = { tournamentId: req.tournament.id }
-    if (stage) where['stage'] = stage
-    if (status) where['status'] = status
-    if (round) where['round'] = parseInt(round, 10)
+    if (stage !== undefined && stage.length > 0) where.stage = stage
+    if (status !== undefined && status.length > 0) where.status = status
+    if (round !== undefined && round.length > 0) where.round = parseInt(round, 10)
 
     const matches = await prisma.match.findMany({
       where,
@@ -90,7 +90,7 @@ router.post('/', loadTournament, requireAdmin, async (req, res) => {
 router.get('/:matchId', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: {
         homeTeam: true,
         awayTeam: true,
@@ -123,7 +123,7 @@ router.get('/:matchId', async (req, res) => {
 router.put('/:matchId', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: true },
     })
 
@@ -153,7 +153,7 @@ router.put('/:matchId', async (req, res) => {
     }
 
     const updated = await prisma.match.update({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       data: parsed.data,
       include: {
         homeTeam: true,
@@ -173,7 +173,7 @@ router.put('/:matchId', async (req, res) => {
 router.post('/:matchId/start', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: true },
     })
 
@@ -243,7 +243,7 @@ router.post('/:matchId/start', async (req, res) => {
 router.post('/:matchId/pause', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: true },
     })
 
@@ -308,7 +308,7 @@ router.post('/:matchId/pause', async (req, res) => {
 router.post('/:matchId/end', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: { include: { sport: true } } },
     })
 
@@ -386,7 +386,7 @@ router.post('/:matchId/end', async (req, res) => {
 router.post('/:matchId/score', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: { include: { sport: true } } },
     })
 
@@ -506,7 +506,7 @@ router.post('/:matchId/score', async (req, res) => {
 router.post('/:matchId/undo', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: {
         tournament: { include: { sport: true } },
         scoreEvents: {
@@ -618,7 +618,7 @@ router.post('/:matchId/undo', async (req, res) => {
 router.delete('/:matchId', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: true },
     })
 
@@ -665,7 +665,7 @@ router.delete('/:matchId', async (req, res) => {
 router.post('/:matchId/next-period', async (req, res) => {
   try {
     const match = await prisma.match.findUnique({
-      where: { id: req.params['matchId'] },
+      where: { id: req.params.matchId },
       include: { tournament: { include: { sport: true } } },
     })
 

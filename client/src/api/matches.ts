@@ -30,9 +30,7 @@ export const matchKeys = {
 
 // Fetch match by ID
 async function fetchMatch(matchId: string): Promise<MatchWithRelations> {
-  const response = await api.get<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}`
-  )
+  const response = await api.get<ApiResponse<MatchWithRelations>>(`/matches/${matchId}`)
   if (!response.data.data) {
     throw new Error('Match not found')
   }
@@ -40,14 +38,8 @@ async function fetchMatch(matchId: string): Promise<MatchWithRelations> {
 }
 
 // Update match
-async function updateMatch(
-  matchId: string,
-  data: UpdateMatch
-): Promise<MatchWithRelations> {
-  const response = await api.put<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}`,
-    data
-  )
+async function updateMatch(matchId: string, data: UpdateMatch): Promise<MatchWithRelations> {
+  const response = await api.put<ApiResponse<MatchWithRelations>>(`/matches/${matchId}`, data)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to update match')
   }
@@ -56,9 +48,7 @@ async function updateMatch(
 
 // Start match
 async function startMatch(matchId: string): Promise<MatchWithRelations> {
-  const response = await api.post<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}/start`
-  )
+  const response = await api.post<ApiResponse<MatchWithRelations>>(`/matches/${matchId}/start`)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to start match')
   }
@@ -67,9 +57,7 @@ async function startMatch(matchId: string): Promise<MatchWithRelations> {
 
 // Pause match
 async function pauseMatch(matchId: string): Promise<MatchWithRelations> {
-  const response = await api.post<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}/pause`
-  )
+  const response = await api.post<ApiResponse<MatchWithRelations>>(`/matches/${matchId}/pause`)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to pause match')
   }
@@ -78,9 +66,7 @@ async function pauseMatch(matchId: string): Promise<MatchWithRelations> {
 
 // End match
 async function endMatch(matchId: string): Promise<MatchWithRelations> {
-  const response = await api.post<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}/end`
-  )
+  const response = await api.post<ApiResponse<MatchWithRelations>>(`/matches/${matchId}/end`)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to end match')
   }
@@ -92,9 +78,10 @@ async function addScore(
   matchId: string,
   data: AddScore
 ): Promise<{ match: MatchWithRelations; event: ScoreEvent }> {
-  const response = await api.post<
-    ApiResponse<{ match: MatchWithRelations; event: ScoreEvent }>
-  >(`/matches/${matchId}/score`, data)
+  const response = await api.post<ApiResponse<{ match: MatchWithRelations; event: ScoreEvent }>>(
+    `/matches/${matchId}/score`,
+    data
+  )
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to add score')
   }
@@ -103,9 +90,7 @@ async function addScore(
 
 // Undo last score
 async function undoScore(matchId: string): Promise<MatchWithRelations> {
-  const response = await api.post<ApiResponse<MatchWithRelations>>(
-    `/matches/${matchId}/undo`
-  )
+  const response = await api.post<ApiResponse<MatchWithRelations>>(`/matches/${matchId}/undo`)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to undo score')
   }
@@ -156,7 +141,7 @@ export function useUpdateMatch(matchId: string, tournamentSlug?: string) {
     mutationFn: (data: UpdateMatch) => updateMatch(matchId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })
@@ -174,7 +159,7 @@ export function useUpdateMatchById(tournamentSlug?: string) {
       updateMatch(matchId, data),
     onSuccess: (_, { matchId }) => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })
@@ -190,7 +175,7 @@ export function useStartMatch(matchId: string, tournamentSlug?: string) {
     mutationFn: () => startMatch(matchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })
@@ -206,7 +191,7 @@ export function usePauseMatch(matchId: string, tournamentSlug?: string) {
     mutationFn: () => pauseMatch(matchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })
@@ -222,7 +207,7 @@ export function useEndMatch(matchId: string, tournamentSlug?: string) {
     mutationFn: () => endMatch(matchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })
@@ -271,7 +256,7 @@ export function useDeleteMatch(matchId: string, tournamentSlug?: string) {
     mutationFn: () => deleteMatch(matchId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) })
-      if (tournamentSlug) {
+      if (tournamentSlug !== undefined) {
         void queryClient.invalidateQueries({
           queryKey: tournamentKeys.detail(tournamentSlug),
         })

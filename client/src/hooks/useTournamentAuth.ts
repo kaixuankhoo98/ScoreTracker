@@ -10,7 +10,9 @@ const authState = new Map<string, { password: string; verified: boolean }>()
 const listeners = new Set<() => void>()
 
 function notifyListeners() {
-  listeners.forEach((listener) => listener())
+  listeners.forEach((listener) => {
+    listener()
+  })
 }
 
 function subscribe(callback: () => void) {

@@ -4,6 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import tanstackQuery from '@tanstack/eslint-plugin-query'
+import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -30,10 +31,7 @@ export default tseslint.config(
     rules: {
       // React hooks
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
       // TanStack Query
       '@tanstack/query/exhaustive-deps': 'error',
@@ -59,5 +57,6 @@ export default tseslint.config(
       eqeqeq: ['error', 'always'],
       'prefer-const': 'error',
     },
-  }
+  },
+  prettier
 )

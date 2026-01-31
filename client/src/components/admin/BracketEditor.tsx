@@ -36,12 +36,7 @@ interface BracketEditorProps {
   sport: SportConfig
 }
 
-export function BracketEditor({
-  matches,
-  teams,
-  tournamentSlug,
-  sport,
-}: BracketEditorProps) {
+export function BracketEditor({ matches, teams, tournamentSlug, sport }: BracketEditorProps) {
   const updateMatchMutation = useUpdateMatchById(tournamentSlug)
 
   const handleAssignTeam = async (

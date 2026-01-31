@@ -144,8 +144,8 @@ router.get('/:teamId', loadTournament, async (req, res) => {
       return
     }
 
-    const teamId = getStringParam(req.params['teamId'])
-    if (!teamId) {
+    const teamId = getStringParam(req.params.teamId)
+    if (teamId === undefined || teamId.length === 0) {
       res.status(400).json({ success: false, error: 'Team ID required' })
       return
     }
@@ -188,8 +188,8 @@ router.put('/:teamId', loadTournament, requireAdmin, async (req, res) => {
       return
     }
 
-    const teamId = getStringParam(req.params['teamId'])
-    if (!teamId) {
+    const teamId = getStringParam(req.params.teamId)
+    if (teamId === undefined || teamId.length === 0) {
       res.status(400).json({ success: false, error: 'Team ID required' })
       return
     }
@@ -233,8 +233,8 @@ router.delete('/:teamId', loadTournament, requireAdmin, async (req, res) => {
       return
     }
 
-    const teamId = getStringParam(req.params['teamId'])
-    if (!teamId) {
+    const teamId = getStringParam(req.params.teamId)
+    if (teamId === undefined || teamId.length === 0) {
       res.status(400).json({ success: false, error: 'Team ID required' })
       return
     }

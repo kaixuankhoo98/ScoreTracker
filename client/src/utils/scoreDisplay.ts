@@ -39,10 +39,7 @@ export function getSetBasedDisplay(match: MatchData, sport: SportData): SetBased
   let awaySetsWon = 0
   let previousSetWinner: 'home' | 'away' | null = null
 
-  const completedSets = Math.min(
-    match.homePeriodScores.length,
-    match.awayPeriodScores.length
-  )
+  const completedSets = Math.min(match.homePeriodScores.length, match.awayPeriodScores.length)
 
   for (let i = 0; i < completedSets; i++) {
     const homeSetScore = match.homePeriodScores[i] ?? 0

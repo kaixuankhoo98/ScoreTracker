@@ -35,5 +35,6 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.cy.ts", "src/**/*.cy.tsx"]
 }

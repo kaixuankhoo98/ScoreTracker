@@ -1,10 +1,6 @@
-import { useRef, useCallback } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { io, type Socket } from 'socket.io-client'
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from '@shared/socket-events'
-import { useSyncExternalStore } from 'react'
+import type { ClientToServerEvents, ServerToClientEvents } from '@shared/socket-events'
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 
@@ -22,17 +18,23 @@ function getSocket(): TypedSocket {
 
     socket.on('connect', () => {
       connectionState = 'connected'
-      listeners.forEach((listener) => listener())
+      listeners.forEach((listener) => {
+        listener()
+      })
     })
 
     socket.on('disconnect', () => {
       connectionState = 'disconnected'
-      listeners.forEach((listener) => listener())
+      listeners.forEach((listener) => {
+        listener()
+      })
     })
 
     socket.on('connect_error', () => {
       connectionState = 'disconnected'
-      listeners.forEach((listener) => listener())
+      listeners.forEach((listener) => {
+        listener()
+      })
     })
   }
 
@@ -51,31 +53,25 @@ function getSnapshot(): 'disconnected' | 'connecting' | 'connected' {
 }
 
 export function useSocket() {
-  const socketRef = useRef<TypedSocket | null>(null)
-
-  // Get socket instance
-  if (socketRef.current === null) {
-    socketRef.current = getSocket()
-  }
-
-  // Subscribe to connection state
   const status = useSyncExternalStore(subscribe, getSnapshot)
 
   const connect = useCallback(() => {
-    const s = socketRef.current
-    if (s !== null && !s.connected) {
+    const s = getSocket()
+    if (!s.connected) {
       connectionState = 'connecting'
-      listeners.forEach((listener) => listener())
+      listeners.forEach((listener) => {
+        listener()
+      })
       s.connect()
     }
   }, [])
 
   const disconnect = useCallback(() => {
-    socketRef.current?.disconnect()
+    getSocket().disconnect()
   }, [])
 
   return {
-    socket: socketRef.current,
+    socket: getSocket(),
     status,
     isConnected: status === 'connected',
     connect,

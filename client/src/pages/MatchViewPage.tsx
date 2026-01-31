@@ -4,21 +4,14 @@ import { ArrowLeft, Share2, Wifi, WifiOff } from 'lucide-react'
 import { useMatch } from '@/api/matches'
 import { useMatchSubscription } from '@/hooks/useMatchSubscription'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MatchScoreboard } from '@/components/match/MatchScoreboard'
 
 export function MatchViewPage() {
   const { slug, matchId } = useParams<{ slug: string; matchId: string }>()
   const { data: match, isLoading } = useMatch(matchId ?? '')
-  const { isSubscribed, isConnected, subscribe, lastEvent } =
-    useMatchSubscription(matchId ?? '')
+  const { isSubscribed, isConnected, subscribe, lastEvent } = useMatchSubscription(matchId ?? '')
 
   // Auto-subscribe when viewing a live match
   useState(() => {
@@ -29,7 +22,7 @@ export function MatchViewPage() {
 
   const handleShare = async () => {
     const url = window.location.href
-    if (navigator.share !== undefined) {
+    if ('share' in navigator && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: `${match?.homeTeam?.name ?? 'TBD'} vs ${match?.awayTeam?.name ?? 'TBD'}`,
@@ -75,9 +68,7 @@ export function MatchViewPage() {
             </Link>
           </Button>
           <div>
-            <p className="text-sm text-muted-foreground">
-              {match.tournament.name}
-            </p>
+            <p className="text-sm text-muted-foreground">{match.tournament.name}</p>
             <p className="text-xs text-muted-foreground">
               {match.stage.replace('_', ' ')} - Match #{match.matchNumber}
             </p>
@@ -102,8 +93,8 @@ export function MatchViewPage() {
           awayTeam: match.awayTeam,
           homeScore: match.homeScore,
           awayScore: match.awayScore,
-          homePeriodScores: match.homePeriodScores ?? [],
-          awayPeriodScores: match.awayPeriodScores ?? [],
+          homePeriodScores: match.homePeriodScores,
+          awayPeriodScores: match.awayPeriodScores,
           currentPeriod: match.currentPeriod,
           status: match.status,
           winner: match.winner,
@@ -112,7 +103,7 @@ export function MatchViewPage() {
         }}
         sport={{
           periodName: sport.periodName,
-          pointsToWinPeriod: sport.pointsToWinPeriod ?? null,
+          pointsToWinPeriod: sport.pointsToWinPeriod,
         }}
         variant="large"
         isSubscribed={isSubscribed}
@@ -133,14 +124,10 @@ export function MatchViewPage() {
                   className="flex items-center justify-between border-b pb-2 last:border-0"
                 >
                   <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        event.teamSide === 'HOME' ? 'default' : 'secondary'
-                      }
-                    >
+                    <Badge variant={event.teamSide === 'HOME' ? 'default' : 'secondary'}>
                       {event.teamSide === 'HOME'
-                        ? match.homeTeam?.shortName ?? 'HOME'
-                        : match.awayTeam?.shortName ?? 'AWAY'}
+                        ? (match.homeTeam?.shortName ?? 'HOME')
+                        : (match.awayTeam?.shortName ?? 'AWAY')}
                     </Badge>
                     <span className="text-sm">{event.action}</span>
                   </div>

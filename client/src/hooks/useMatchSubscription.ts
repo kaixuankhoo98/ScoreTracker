@@ -41,18 +41,22 @@ export function useMatchSubscription(matchId: string) {
   const state = useSyncExternalStore(subscribe, getSnapshot)
 
   const notifyListeners = useCallback(() => {
-    listenersRef.current.forEach((listener) => listener())
+    listenersRef.current.forEach((listener) => {
+      listener()
+    })
   }, [])
 
   const updateMatchCache = useCallback(
-    (updates: Partial<{
-      homeScore: number
-      awayScore: number
-      homePeriodScores: number[]
-      awayPeriodScores: number[]
-      currentPeriod: number
-      status: string
-    }>) => {
+    (
+      updates: Partial<{
+        homeScore: number
+        awayScore: number
+        homePeriodScores: number[]
+        awayPeriodScores: number[]
+        currentPeriod: number
+        status: string
+      }>
+    ) => {
       queryClient.setQueryData(matchKeys.detail(matchId), (old: unknown) => {
         if (old === null || old === undefined) return old
         return { ...(old as object), ...updates }
@@ -62,7 +66,7 @@ export function useMatchSubscription(matchId: string) {
   )
 
   const subscribeToMatch = useCallback(() => {
-    if (socket === null || matchId.length === 0) return
+    if (matchId.length === 0) return
 
     // Connect if not connected
     if (!isConnected) {
@@ -184,7 +188,7 @@ export function useMatchSubscription(matchId: string) {
   }, [socket, matchId, isConnected, connect, updateMatchCache, queryClient, notifyListeners])
 
   const unsubscribeFromMatch = useCallback(() => {
-    if (socket !== null && matchId.length > 0) {
+    if (matchId.length > 0) {
       socket.emit('leave_match', matchId)
       stateRef.current = { isSubscribed: false, lastEvent: null }
       notifyListeners()

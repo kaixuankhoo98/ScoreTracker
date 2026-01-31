@@ -34,18 +34,23 @@ export function useTournamentSubscription(tournamentId: string, tournamentSlug: 
   const state = useSyncExternalStore(subscribe, getSnapshot)
 
   const notifyListeners = useCallback(() => {
-    listenersRef.current.forEach((listener) => listener())
+    listenersRef.current.forEach((listener) => {
+      listener()
+    })
   }, [])
 
   const updateTournamentCache = useCallback(
-    (matchId: string, updates: {
-      homeScore: number
-      awayScore: number
-      homePeriodScores: number[]
-      awayPeriodScores: number[]
-      currentPeriod: number
-      status: string
-    }) => {
+    (
+      matchId: string,
+      updates: {
+        homeScore: number
+        awayScore: number
+        homePeriodScores: number[]
+        awayPeriodScores: number[]
+        currentPeriod: number
+        status: string
+      }
+    ) => {
       queryClient.setQueryData(
         tournamentKeys.detail(tournamentSlug),
         (old: TournamentWithRelations | undefined) => {
@@ -53,9 +58,7 @@ export function useTournamentSubscription(tournamentId: string, tournamentSlug: 
           return {
             ...old,
             matches: old.matches.map((match) =>
-              match.id === matchId
-                ? { ...match, ...updates }
-                : match
+              match.id === matchId ? { ...match, ...updates } : match
             ),
           }
         }
@@ -65,7 +68,7 @@ export function useTournamentSubscription(tournamentId: string, tournamentSlug: 
   )
 
   const subscribeToTournament = useCallback(() => {
-    if (socket === null || tournamentId.length === 0) return
+    if (tournamentId.length === 0) return
 
     // Connect if not connected
     if (!isConnected) {
@@ -111,7 +114,7 @@ export function useTournamentSubscription(tournamentId: string, tournamentSlug: 
   }, [socket, tournamentId, isConnected, connect, updateTournamentCache, notifyListeners])
 
   const unsubscribeFromTournament = useCallback(() => {
-    if (socket !== null && tournamentId.length > 0) {
+    if (tournamentId.length > 0) {
       socket.emit('leave_tournament', tournamentId)
       stateRef.current = { isSubscribed: false, lastEvent: null }
       notifyListeners()

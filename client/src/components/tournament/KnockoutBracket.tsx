@@ -55,12 +55,7 @@ interface KnockoutBracketProps {
 }
 
 // Define the order of stages for proper bracket layout
-const STAGE_ORDER = [
-  'ROUND_OF_16',
-  'QUARTERFINAL',
-  'SEMIFINAL',
-  'FINAL',
-]
+const STAGE_ORDER = ['ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'FINAL']
 
 const STAGE_LABELS: Record<string, string> = {
   ROUND_OF_16: 'Round of 16',
@@ -81,21 +76,26 @@ export function KnockoutBracket({
   // Transform matches to library format
   const { bracketRounds, thirdPlaceMatch } = useMemo(() => {
     // Separate third place match
-    const thirdPlace = matches.find(m => m.stage === 'THIRD_PLACE') ?? null
-    const bracketMatchList = matches.filter(m => m.stage !== 'THIRD_PLACE')
+    const thirdPlace = matches.find((m) => m.stage === 'THIRD_PLACE') ?? null
+    const bracketMatchList = matches.filter((m) => m.stage !== 'THIRD_PLACE')
 
     // Group matches by stage
     const stageGroups: Record<string, Match[]> = {}
     for (const match of bracketMatchList) {
-      if (stageGroups[match.stage] === undefined) {
-        stageGroups[match.stage] = []
+      let group = stageGroups[match.stage]
+      if (group === undefined) {
+        group = []
+        stageGroups[match.stage] = group
       }
-      stageGroups[match.stage]!.push(match)
+      group.push(match)
     }
 
     // Sort matches within each stage by matchNumber
     for (const stage of Object.keys(stageGroups)) {
-      stageGroups[stage]!.sort((a, b) => a.matchNumber - b.matchNumber)
+      const group = stageGroups[stage]
+      if (group !== undefined) {
+        group.sort((a, b) => a.matchNumber - b.matchNumber)
+      }
     }
 
     // Build rounds in order
@@ -105,7 +105,7 @@ export function KnockoutBracket({
       if (stageMatches && stageMatches.length > 0) {
         rounds.push({
           title: STAGE_LABELS[stage] ?? stage,
-          seeds: stageMatches.map(match => ({
+          seeds: stageMatches.map((match) => ({
             id: match.id,
             teams: [
               {
@@ -169,7 +169,7 @@ export function KnockoutBracket({
       return match.winner.id === teamId
     }
 
-    const canAssign = mode === 'admin' && onAssignTeam
+    const canAssign = mode === 'admin' && onAssignTeam !== undefined
 
     const renderTeamRow = (side: 'home' | 'away') => {
       const team = side === 'home' ? match.homeTeam : match.awayTeam
@@ -182,7 +182,9 @@ export function KnockoutBracket({
           <SeedTeam className="!bg-card !text-foreground !justify-between !px-2">
             <Select
               value={teamId ?? '__TBD__'}
-              onValueChange={(value) => onAssignTeam!(match.id, side, value === '__TBD__' ? null : value)}
+              onValueChange={(value) => {
+                onAssignTeam(match.id, side, value === '__TBD__' ? null : value)
+              }}
             >
               <SelectTrigger className="h-6 w-24 text-xs border-0 bg-transparent p-0">
                 <SelectValue placeholder="Select team" />
@@ -207,9 +209,7 @@ export function KnockoutBracket({
             winner ? '!font-semibold !text-green-600 dark:!text-green-400' : ''
           }`}
         >
-          <span className="truncate text-xs">
-            {team?.shortName ?? team?.name ?? 'TBD'}
-          </span>
+          <span className="truncate text-xs">{team?.shortName ?? team?.name ?? 'TBD'}</span>
           <span className={`ml-2 text-xs font-medium ${isLive ? 'text-red-500' : ''}`}>
             {getScore(side)}
           </span>
@@ -218,11 +218,12 @@ export function KnockoutBracket({
     }
 
     // Determine link URL
-    const getLinkUrl = () => {
+    const getLinkUrl = (): string | null => {
       if (mode === 'spectator') {
         return `/tournaments/${tournamentSlug}/matches/${match.id}`
       }
-      if (mode === 'admin' && (match.homeTeam || match.awayTeam)) {
+      // mode === 'admin'
+      if (match.homeTeam !== null || match.awayTeam !== null) {
         return `/tournaments/${tournamentSlug}/admin/matches/${match.id}`
       }
       return null
@@ -246,8 +247,10 @@ export function KnockoutBracket({
     // Seed MUST be the root element for CSS nth-child connectors to work
     return (
       <Seed mobileBreakpoint={breakpoint}>
-        <SeedItem className={`!bg-card !rounded-md !shadow-sm ${isLive ? '!border !border-red-500/50' : '!border !border-border'}`}>
-          {linkUrl ? (
+        <SeedItem
+          className={`!bg-card !rounded-md !shadow-sm ${isLive ? '!border !border-red-500/50' : '!border !border-border'}`}
+        >
+          {linkUrl !== null ? (
             <Link to={linkUrl} className="block hover:bg-muted/50 rounded-md">
               {cardInner}
             </Link>
@@ -305,9 +308,7 @@ export function KnockoutBracket({
             winner ? 'font-semibold text-green-600 dark:text-green-400' : ''
           }`}
         >
-          <span className="truncate text-sm">
-            {team?.shortName ?? team?.name ?? 'TBD'}
-          </span>
+          <span className="truncate text-sm">{team?.shortName ?? team?.name ?? 'TBD'}</span>
           <span className={`ml-2 text-sm font-medium ${isLive ? 'text-red-500' : ''}`}>
             {getScore(side)}
           </span>
@@ -333,15 +334,14 @@ export function KnockoutBracket({
       </div>
     )
 
-    const wrappedContent = mode === 'spectator' ? (
-      <Link to={`/tournaments/${tournamentSlug}/matches/${match.id}`}>
-        {cardContent}
-      </Link>
-    ) : mode === 'admin' && (match.homeTeam || match.awayTeam) ? (
-      <Link to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`}>
-        {cardContent}
-      </Link>
-    ) : cardContent
+    const wrappedContent =
+      mode === 'spectator' ? (
+        <Link to={`/tournaments/${tournamentSlug}/matches/${match.id}`}>{cardContent}</Link>
+      ) : match.homeTeam !== null || match.awayTeam !== null ? (
+        <Link to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`}>{cardContent}</Link>
+      ) : (
+        cardContent
+      )
 
     return (
       <div className="mt-8 pt-4 border-t">
@@ -377,9 +377,7 @@ export function KnockoutBracket({
           rounds={bracketRounds}
           renderSeedComponent={CustomSeed}
           roundTitleComponent={(title) => (
-            <div className="text-sm font-semibold text-center mb-2 text-foreground">
-              {title}
-            </div>
+            <div className="text-sm font-semibold text-center mb-2 text-foreground">{title}</div>
           )}
           mobileBreakpoint={0}
         />

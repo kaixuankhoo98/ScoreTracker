@@ -37,10 +37,7 @@ function App() {
               path="/tournaments/:slug/admin/matches/:matchId"
               element={<MatchScoringPage />}
             />
-            <Route
-              path="/tournaments/:slug/matches/:matchId"
-              element={<MatchViewPage />}
-            />
+            <Route path="/tournaments/:slug/matches/:matchId" element={<MatchViewPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

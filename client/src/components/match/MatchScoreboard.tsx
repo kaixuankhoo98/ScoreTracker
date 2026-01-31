@@ -42,12 +42,12 @@ export function MatchScoreboard({
     {
       homeScore: match.homeScore,
       awayScore: match.awayScore,
-      homePeriodScores: match.homePeriodScores ?? [],
-      awayPeriodScores: match.awayPeriodScores ?? [],
+      homePeriodScores: match.homePeriodScores,
+      awayPeriodScores: match.awayPeriodScores,
       status: match.status,
     },
     {
-      pointsToWinPeriod: sport.pointsToWinPeriod ?? null,
+      pointsToWinPeriod: sport.pointsToWinPeriod,
       periodName: sport.periodName,
     }
   )
@@ -55,10 +55,10 @@ export function MatchScoreboard({
   // For set-based sports in compact mode, show current set score
   const currentSetIndex = match.currentPeriod - 1
   const displayHomeScore = setDisplay.isSetBased
-    ? (match.homePeriodScores?.[currentSetIndex] ?? 0)
+    ? (match.homePeriodScores[currentSetIndex] ?? 0)
     : match.homeScore
   const displayAwayScore = setDisplay.isSetBased
-    ? (match.awayPeriodScores?.[currentSetIndex] ?? 0)
+    ? (match.awayPeriodScores[currentSetIndex] ?? 0)
     : match.awayScore
 
   const getWinnerStyle = (side: 'home' | 'away') => {
@@ -123,8 +123,7 @@ export function MatchScoreboard({
             <div className="mt-4 flex justify-center gap-4 text-sm text-muted-foreground">
               {match.homePeriodScores.slice(0, -1).map((score, i) => (
                 <span key={i}>
-                  {sport.periodName} {i + 1}: {score}-
-                  {match.awayPeriodScores[i] ?? 0}
+                  {sport.periodName} {i + 1}: {score}-{match.awayPeriodScores[i] ?? 0}
                 </span>
               ))}
             </div>
@@ -140,37 +139,24 @@ export function MatchScoreboard({
       <CardContent className="pt-6">
         {showStatusBadge && (
           <div className="flex items-center justify-center gap-2">
-            <Badge
-              variant={
-                isLive ? 'live' : isCompleted ? 'success' : 'secondary'
-              }
-            >
-              {isLive && (
-                <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-              )}
+            <Badge variant={isLive ? 'live' : isCompleted ? 'success' : 'secondary'}>
+              {isLive && <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />}
               {match.status}
             </Badge>
             {isLive && isSubscribed && (
-              <span className="text-xs text-muted-foreground">
-                Real-time updates active
-              </span>
+              <span className="text-xs text-muted-foreground">Real-time updates active</span>
             )}
           </div>
         )}
 
         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
           <div className="space-y-2">
-            <h2
-              className={`text-xl font-bold ${getWinnerStyle('home')}`}
-            >
+            <h2 className={`text-xl font-bold ${getWinnerStyle('home')}`}>
               {match.homeTeam?.name ?? 'TBD'}
             </h2>
-            {match.homeTeam?.shortName !== undefined &&
-              match.homeTeam.shortName !== null && (
-                <p className="text-sm text-muted-foreground">
-                  {match.homeTeam.shortName}
-                </p>
-              )}
+            {match.homeTeam?.shortName !== undefined && match.homeTeam.shortName !== null && (
+              <p className="text-sm text-muted-foreground">{match.homeTeam.shortName}</p>
+            )}
           </div>
 
           <div className="flex flex-col items-center justify-center">
@@ -180,17 +166,12 @@ export function MatchScoreboard({
           </div>
 
           <div className="space-y-2">
-            <h2
-              className={`text-xl font-bold ${getWinnerStyle('away')}`}
-            >
+            <h2 className={`text-xl font-bold ${getWinnerStyle('away')}`}>
               {match.awayTeam?.name ?? 'TBD'}
             </h2>
-            {match.awayTeam?.shortName !== undefined &&
-              match.awayTeam.shortName !== null && (
-                <p className="text-sm text-muted-foreground">
-                  {match.awayTeam.shortName}
-                </p>
-              )}
+            {match.awayTeam?.shortName !== undefined && match.awayTeam.shortName !== null && (
+              <p className="text-sm text-muted-foreground">{match.awayTeam.shortName}</p>
+            )}
           </div>
         </div>
 
@@ -210,9 +191,7 @@ export function MatchScoreboard({
               </div>
             )}
           </div>
-          <div className="flex items-center justify-center text-3xl text-muted-foreground">
-            -
-          </div>
+          <div className="flex items-center justify-center text-3xl text-muted-foreground">-</div>
           <div className="flex flex-col items-center">
             <div
               className={`text-7xl font-bold ${
@@ -234,23 +213,16 @@ export function MatchScoreboard({
           <div className="mt-6 border-t pt-4">
             <div className="grid grid-cols-3 gap-2 text-center text-sm">
               <div />
-              <div className="font-medium text-muted-foreground">
-                {sport.periodName}s
-              </div>
+              <div className="font-medium text-muted-foreground">{sport.periodName}s</div>
               <div />
             </div>
             {match.homePeriodScores.map((homeScore, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-3 gap-2 text-center text-sm"
-              >
+              <div key={i} className="grid grid-cols-3 gap-2 text-center text-sm">
                 <div className="font-medium">{homeScore}</div>
                 <div className="text-muted-foreground">
                   {sport.periodName} {i + 1}
                 </div>
-                <div className="font-medium">
-                  {match.awayPeriodScores[i] ?? 0}
-                </div>
+                <div className="font-medium">{match.awayPeriodScores[i] ?? 0}</div>
               </div>
             ))}
           </div>

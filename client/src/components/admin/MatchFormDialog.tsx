@@ -26,14 +26,7 @@ import type { Team, MatchStage } from '@shared/schemas'
 const matchFormSchema = z.object({
   homeTeamId: z.string().optional(),
   awayTeamId: z.string().optional(),
-  stage: z.enum([
-    'GROUP',
-    'ROUND_OF_16',
-    'QUARTERFINAL',
-    'SEMIFINAL',
-    'THIRD_PLACE',
-    'FINAL',
-  ]),
+  stage: z.enum(['GROUP', 'ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'THIRD_PLACE', 'FINAL']),
   round: z.number().int().positive(),
   matchNumber: z.number().int().positive(),
   scheduledAt: z.string().optional(),
@@ -100,7 +93,7 @@ export function MatchFormDialog({
 
   // Format datetime-local value for input
   const formatDateTimeLocal = (isoString?: string | null) => {
-    if (!isoString) return ''
+    if (isoString === undefined || isoString === null || isoString === '') return ''
     return format(parseISO(isoString), "yyyy-MM-dd'T'HH:mm")
   }
 
@@ -108,19 +101,12 @@ export function MatchFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {mode === 'create' ? 'Create Match' : 'Edit Match'}
-          </DialogTitle>
+          <DialogTitle>{mode === 'create' ? 'Create Match' : 'Edit Match'}</DialogTitle>
           <DialogDescription>
-            {mode === 'create'
-              ? 'Create a new match in this tournament'
-              : 'Edit match details'}
+            {mode === 'create' ? 'Create a new match in this tournament' : 'Edit match details'}
           </DialogDescription>
         </DialogHeader>
-        <form
-          onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)}
-          className="space-y-4"
-        >
+        <form onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Home Team</Label>
@@ -130,9 +116,9 @@ export function MatchFormDialog({
                 render={({ field }) => (
                   <Select
                     value={field.value ?? ''}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
                       field.onChange(value === '__none__' ? undefined : value)
-                    }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select team" />
@@ -157,9 +143,9 @@ export function MatchFormDialog({
                 render={({ field }) => (
                   <Select
                     value={field.value ?? ''}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
                       field.onChange(value === '__none__' ? undefined : value)
-                    }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select team" />
@@ -203,15 +189,9 @@ export function MatchFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Round</Label>
-              <Input
-                type="number"
-                min={1}
-                {...form.register('round', { valueAsNumber: true })}
-              />
+              <Input type="number" min={1} {...form.register('round', { valueAsNumber: true })} />
               {form.formState.errors.round?.message !== undefined && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.round.message}
-                </p>
+                <p className="text-sm text-destructive">{form.formState.errors.round.message}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -250,7 +230,9 @@ export function MatchFormDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                onOpenChange(false)
+              }}
             >
               Cancel
             </Button>

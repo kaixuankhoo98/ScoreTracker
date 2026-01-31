@@ -1,13 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Play,
-  Pause,
-  Square,
-  Undo2,
-  SkipForward,
-} from 'lucide-react'
+import { ArrowLeft, Play, Pause, Square, Undo2, SkipForward } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   useMatch,
@@ -21,13 +14,7 @@ import {
 import { useTournamentAuth } from '@/hooks/useTournamentAuth'
 import { useMatchSubscription } from '@/hooks/useMatchSubscription'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -91,9 +78,7 @@ export function MatchScoringPage() {
         <Card>
           <CardHeader>
             <CardTitle>Admin Access Required</CardTitle>
-            <CardDescription>
-              Enter the admin password to score this match
-            </CardDescription>
+            <CardDescription>Enter the admin password to score this match</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -101,7 +86,9 @@ export function MatchScoringPage() {
               <Input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     void handleLogin()
@@ -112,11 +99,7 @@ export function MatchScoringPage() {
                 <p className="text-sm text-destructive">{passwordError}</p>
               )}
             </div>
-            <Button
-              onClick={() => void handleLogin()}
-              disabled={isVerifying}
-              className="w-full"
-            >
+            <Button onClick={() => void handleLogin()} disabled={isVerifying} className="w-full">
               {isVerifying ? 'Verifying...' : 'Login'}
             </Button>
           </CardContent>
@@ -177,11 +160,7 @@ export function MatchScoringPage() {
             {match.tournament.name} - Match #{match.matchNumber}
           </p>
         </div>
-        <Badge
-          variant={
-            isLive ? 'live' : isCompleted ? 'success' : 'secondary'
-          }
-        >
+        <Badge variant={isLive ? 'live' : isCompleted ? 'success' : 'secondary'}>
           {match.status}
         </Badge>
       </div>
@@ -193,8 +172,8 @@ export function MatchScoringPage() {
           awayTeam: match.awayTeam,
           homeScore: match.homeScore,
           awayScore: match.awayScore,
-          homePeriodScores: match.homePeriodScores ?? [],
-          awayPeriodScores: match.awayPeriodScores ?? [],
+          homePeriodScores: match.homePeriodScores,
+          awayPeriodScores: match.awayPeriodScores,
           currentPeriod: match.currentPeriod,
           status: match.status,
           winner: match.winner,
@@ -203,7 +182,7 @@ export function MatchScoringPage() {
         }}
         sport={{
           periodName: sport.periodName,
-          pointsToWinPeriod: sport.pointsToWinPeriod ?? null,
+          pointsToWinPeriod: sport.pointsToWinPeriod,
         }}
         variant="compact"
         showStatusBadge={false}
@@ -284,12 +263,12 @@ export function MatchScoringPage() {
                       void handleScore(
                         'HOME',
                         points,
-                        sport.scoreLabels[i] ?? `${points} Point`
+                        sport.scoreLabels[i] ?? `${String(points)} Point`
                       )
                     }
                     disabled={scoreMutation.isPending}
                   >
-                    +{points} ({sport.scoreLabels[i] ?? `${points} Point`})
+                    +{String(points)} ({sport.scoreLabels[i] ?? `${String(points)} Point`})
                   </Button>
                 ))}
               </div>
@@ -314,12 +293,12 @@ export function MatchScoringPage() {
                       void handleScore(
                         'AWAY',
                         points,
-                        sport.scoreLabels[i] ?? `${points} Point`
+                        sport.scoreLabels[i] ?? `${String(points)} Point`
                       )
                     }
                     disabled={scoreMutation.isPending}
                   >
-                    +{points} ({sport.scoreLabels[i] ?? `${points} Point`})
+                    +{String(points)} ({sport.scoreLabels[i] ?? `${String(points)} Point`})
                   </Button>
                 ))}
               </div>
@@ -337,15 +316,10 @@ export function MatchScoringPage() {
           <CardContent>
             <div className="space-y-2">
               {match.scoreEvents.slice(0, 10).map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center justify-between text-sm"
-                >
+                <div key={event.id} className="flex items-center justify-between text-sm">
                   <span>
-                    {event.teamSide === 'HOME'
-                      ? match.homeTeam?.name
-                      : match.awayTeam?.name}{' '}
-                    - {event.action}
+                    {event.teamSide === 'HOME' ? match.homeTeam?.name : match.awayTeam?.name} -{' '}
+                    {event.action}
                   </span>
                   <span className="text-muted-foreground">
                     +{event.points} ({sport.periodName} {event.period})

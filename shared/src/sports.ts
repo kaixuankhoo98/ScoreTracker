@@ -49,19 +49,10 @@ export interface SportHandler {
   ): { valid: boolean; message?: string }
 
   // Apply a score and return new state
-  applyScore(
-    state: MatchState,
-    teamSide: TeamSide,
-    points: number
-  ): ScoreActionResult
+  applyScore(state: MatchState, teamSide: TeamSide, points: number): ScoreActionResult
 
   // Undo last score
-  undoScore(
-    state: MatchState,
-    teamSide: TeamSide,
-    points: number,
-    period: number
-  ): MatchState
+  undoScore(state: MatchState, teamSide: TeamSide, points: number, period: number): MatchState
 
   // Get available actions for current state
   getAvailableActions(state: MatchState): AvailableAction[]
@@ -179,7 +170,7 @@ export function createBaseSportHandler(config: SportConfig): SportHandler {
       for (let i = 0; i < config.scoreIncrements.length; i++) {
         const points = config.scoreIncrements[i]
         if (points === undefined) continue
-        const label = config.scoreLabels[i] ?? `${points} Point${points > 1 ? 's' : ''}`
+        const label = config.scoreLabels[i] ?? `${String(points)} Point${points > 1 ? 's' : ''}`
 
         actions.push({ points, label, teamSide: 'HOME' })
         actions.push({ points, label, teamSide: 'AWAY' })
@@ -187,11 +178,13 @@ export function createBaseSportHandler(config: SportConfig): SportHandler {
       return actions
     },
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     shouldEndPeriod(_state: MatchState) {
       // Override in specific sport handlers
       return false
     },
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     shouldEndMatch(_state: MatchState) {
       // Override in specific sport handlers
       return { ended: false, winnerId: null }
@@ -211,12 +204,12 @@ export function createBaseSportHandler(config: SportConfig): SportHandler {
     },
 
     formatScore(state: MatchState) {
-      return `${state.homeScore} - ${state.awayScore}`
+      return `${String(state.homeScore)} - ${String(state.awayScore)}`
     },
 
     formatPeriodScore(homePeriodScores: number[], awayPeriodScores: number[]) {
       return homePeriodScores
-        .map((home, i) => `${home}-${awayPeriodScores[i] ?? 0}`)
+        .map((home, i) => `${String(home)}-${String(awayPeriodScores[i] ?? 0)}`)
         .join(', ')
     },
   }
@@ -315,7 +308,7 @@ export function createVolleyballHandler(): SportHandler {
         else if (awaySetScore > homeSetScore) awaySets++
       }
 
-      return `${homeSets} - ${awaySets}`
+      return `${String(homeSets)} - ${String(awaySets)}`
     },
   }
 }

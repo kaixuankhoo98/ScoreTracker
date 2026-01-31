@@ -23,12 +23,12 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
     pointsToWinPeriod: number | null
   }
   teams: Team[]
-  groups: Array<{
+  groups: {
     id: string
     name: string
     teams: Team[]
-  }>
-  matches: Array<{
+  }[]
+  matches: {
     id: string
     homeTeamId: string | null
     awayTeamId: string | null
@@ -44,7 +44,7 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
     homeTeam: Team | null
     awayTeam: Team | null
     winner: Team | null
-  }>
+  }[]
   _count: {
     teams: number
     matches: number
@@ -55,8 +55,7 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
 export const tournamentKeys = {
   all: ['tournaments'] as const,
   lists: () => [...tournamentKeys.all, 'list'] as const,
-  list: (filters: Record<string, unknown>) =>
-    [...tournamentKeys.lists(), filters] as const,
+  list: (filters: Record<string, unknown>) => [...tournamentKeys.lists(), filters] as const,
   details: () => [...tournamentKeys.all, 'detail'] as const,
   detail: (slug: string) => [...tournamentKeys.details(), slug] as const,
 }
@@ -66,10 +65,13 @@ async function fetchTournaments(params?: {
   page?: number
   limit?: number
   status?: string
-}): Promise<{ tournaments: TournamentWithRelations[]; pagination: { total: number; page: number; limit: number } }> {
+}): Promise<{
+  tournaments: TournamentWithRelations[]
+  pagination: { total: number; page: number; limit: number }
+}> {
   const response = await api.get<
     ApiResponse<TournamentWithRelations[]> & {
-      pagination: { total: number; page: number; limit: number }
+      pagination?: { total: number; page: number; limit: number }
     }
   >('/tournaments', { params })
   return {
@@ -80,9 +82,7 @@ async function fetchTournaments(params?: {
 
 // Fetch single tournament
 async function fetchTournament(slug: string): Promise<TournamentWithRelations> {
-  const response = await api.get<ApiResponse<TournamentWithRelations>>(
-    `/tournaments/${slug}`
-  )
+  const response = await api.get<ApiResponse<TournamentWithRelations>>(`/tournaments/${slug}`)
   if (!response.data.data) {
     throw new Error('Tournament not found')
   }
@@ -90,13 +90,8 @@ async function fetchTournament(slug: string): Promise<TournamentWithRelations> {
 }
 
 // Create tournament
-async function createTournament(
-  data: CreateTournament
-): Promise<TournamentWithRelations> {
-  const response = await api.post<ApiResponse<TournamentWithRelations>>(
-    '/tournaments',
-    data
-  )
+async function createTournament(data: CreateTournament): Promise<TournamentWithRelations> {
+  const response = await api.post<ApiResponse<TournamentWithRelations>>('/tournaments', data)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to create tournament')
   }
@@ -108,10 +103,7 @@ async function updateTournament(
   slug: string,
   data: UpdateTournament
 ): Promise<TournamentWithRelations> {
-  const response = await api.put<ApiResponse<TournamentWithRelations>>(
-    `/tournaments/${slug}`,
-    data
-  )
+  const response = await api.put<ApiResponse<TournamentWithRelations>>(`/tournaments/${slug}`, data)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to update tournament')
   }
@@ -124,10 +116,7 @@ async function deleteTournament(slug: string): Promise<void> {
 }
 
 // Verify password
-async function verifyPassword(
-  slug: string,
-  password: string
-): Promise<boolean> {
+async function verifyPassword(slug: string, password: string): Promise<boolean> {
   const response = await api.post<ApiResponse<{ valid: boolean }>>(
     `/tournaments/${slug}/verify-password`,
     { password }
@@ -152,10 +141,7 @@ async function generateMatches(
 
 // Add team
 async function addTeam(slug: string, data: CreateTeam): Promise<Team> {
-  const response = await api.post<ApiResponse<Team>>(
-    `/tournaments/${slug}/teams`,
-    data
-  )
+  const response = await api.post<ApiResponse<Team>>(`/tournaments/${slug}/teams`, data)
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to add team')
   }
@@ -166,9 +152,9 @@ async function addTeam(slug: string, data: CreateTeam): Promise<Team> {
 async function addTeamsBulk(
   slug: string,
   teams: CreateTeam[]
-): Promise<{ created: Team[]; errors: Array<{ index: number; error: string }> }> {
+): Promise<{ created: Team[]; errors: { index: number; error: string }[] }> {
   const response = await api.post<
-    ApiResponse<{ created: Team[]; errors: Array<{ index: number; error: string }> }>
+    ApiResponse<{ created: Team[]; errors: { index: number; error: string }[] }>
   >(`/tournaments/${slug}/teams/bulk`, { teams })
   return response.data.data ?? { created: [], errors: [] }
 }
@@ -183,9 +169,10 @@ async function createMatch(
   slug: string,
   data: CreateMatch
 ): Promise<TournamentWithRelations['matches'][number]> {
-  const response = await api.post<
-    ApiResponse<TournamentWithRelations['matches'][number]>
-  >(`/tournaments/${slug}/matches`, data)
+  const response = await api.post<ApiResponse<TournamentWithRelations['matches'][number]>>(
+    `/tournaments/${slug}/matches`,
+    data
+  )
   if (!response.data.data) {
     throw new Error(response.data.error ?? 'Failed to create match')
   }
@@ -193,11 +180,7 @@ async function createMatch(
 }
 
 // Hooks
-export function useTournaments(params?: {
-  page?: number
-  limit?: number
-  status?: string
-}) {
+export function useTournaments(params?: { page?: number; limit?: number; status?: string }) {
   return useQuery({
     queryKey: tournamentKeys.list(params ?? {}),
     queryFn: () => fetchTournaments(params),

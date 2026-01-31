@@ -62,28 +62,22 @@ export function MatchCard({ match, tournamentSlug, sport }: MatchCardProps) {
     if (setDisplay.isSetBased) {
       const setsWon = side === 'home' ? setDisplay.setsWon.home : setDisplay.setsWon.away
       const currentSetPts = setDisplay.currentSetScore
-        ? (side === 'home' ? setDisplay.currentSetScore.home : setDisplay.currentSetScore.away)
+        ? side === 'home'
+          ? setDisplay.currentSetScore.home
+          : setDisplay.currentSetScore.away
         : null
 
       return (
         <span className="flex items-center gap-2">
-          <span className={`text-xl font-bold ${isLive ? 'text-red-500' : ''}`}>
-            {setsWon}
-          </span>
+          <span className={`text-xl font-bold ${isLive ? 'text-red-500' : ''}`}>{setsWon}</span>
           {currentSetPts !== null && (
-            <span className="text-sm text-muted-foreground">
-              ({currentSetPts})
-            </span>
+            <span className="text-sm text-muted-foreground">({currentSetPts})</span>
           )}
         </span>
       )
     }
 
-    return (
-      <span className={`text-xl font-bold ${isLive ? 'text-red-500' : ''}`}>
-        {score}
-      </span>
-    )
+    return <span className={`text-xl font-bold ${isLive ? 'text-red-500' : ''}`}>{score}</span>
   }
 
   // Determine team name styling
@@ -92,9 +86,7 @@ export function MatchCard({ match, tournamentSlug, sport }: MatchCardProps) {
     const isWinner = isCompleted && match.winner?.id === teamId
 
     // For set-based sports, highlight previous set winner
-    const wonPreviousSet = setDisplay.isSetBased &&
-      isLive &&
-      setDisplay.previousSetWinner === side
+    const wonPreviousSet = setDisplay.isSetBased && isLive && setDisplay.previousSetWinner === side
 
     if (isWinner) {
       return 'font-medium text-green-600 dark:text-green-400'
@@ -107,24 +99,16 @@ export function MatchCard({ match, tournamentSlug, sport }: MatchCardProps) {
 
   return (
     <Link to={`/tournaments/${tournamentSlug}/matches/${match.id}`}>
-      <Card
-        className={`transition-colors hover:bg-muted/50 ${
-          isLive ? 'border-red-500/50' : ''
-        }`}
-      >
+      <Card className={`transition-colors hover:bg-muted/50 ${isLive ? 'border-red-500/50' : ''}`}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className={getTeamStyle('home')}>
-                  {match.homeTeam?.name ?? 'TBD'}
-                </span>
+                <span className={getTeamStyle('home')}>{match.homeTeam?.name ?? 'TBD'}</span>
                 {renderScore('home')}
               </div>
               <div className="flex items-center justify-between">
-                <span className={getTeamStyle('away')}>
-                  {match.awayTeam?.name ?? 'TBD'}
-                </span>
+                <span className={getTeamStyle('away')}>{match.awayTeam?.name ?? 'TBD'}</span>
                 {renderScore('away')}
               </div>
             </div>
@@ -134,9 +118,7 @@ export function MatchCard({ match, tournamentSlug, sport }: MatchCardProps) {
               {match.stage.replace('_', ' ')} - Match {match.matchNumber}
             </span>
             <Badge variant={statusVariants[match.status] ?? 'default'}>
-              {isLive && (
-                <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-              )}
+              {isLive && <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />}
               {match.status}
             </Badge>
           </div>

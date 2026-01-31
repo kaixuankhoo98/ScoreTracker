@@ -27,7 +27,7 @@ export interface ApiResponse<T> {
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiResponse<unknown>>
-    return axiosError.response?.data?.error ?? axiosError.message
+    return axiosError.response?.data.error ?? axiosError.message
   }
   if (error instanceof Error) {
     return error.message

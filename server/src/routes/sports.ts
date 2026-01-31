@@ -21,7 +21,7 @@ router.get('/', async (_req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const sport = await prisma.sport.findUnique({
-      where: { slug: req.params['slug'] },
+      where: { slug: req.params.slug },
     })
 
     if (!sport) {

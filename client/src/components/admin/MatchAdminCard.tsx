@@ -36,11 +36,7 @@ interface MatchAdminCardProps {
   }) => void
 }
 
-export function MatchAdminCard({
-  match,
-  tournamentSlug,
-  onEdit,
-}: MatchAdminCardProps) {
+export function MatchAdminCard({ match, tournamentSlug, onEdit }: MatchAdminCardProps) {
   const deleteMatchMutation = useDeleteMatch(match.id, tournamentSlug)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
@@ -75,10 +71,7 @@ export function MatchAdminCard({
 
   return (
     <div className="rounded-lg border p-3 transition-colors hover:bg-muted/50 group relative">
-      <Link
-        to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`}
-        className="block"
-      >
+      <Link to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`} className="block">
         <div className="flex items-center justify-between">
           <Badge
             variant={
@@ -91,9 +84,7 @@ export function MatchAdminCard({
           >
             {match.status}
           </Badge>
-          <span className="text-sm text-muted-foreground">
-            #{match.matchNumber}
-          </span>
+          <span className="text-sm text-muted-foreground">#{match.matchNumber}</span>
         </div>
         <div className="mt-2 space-y-1">
           <div className="flex justify-between">
@@ -136,7 +127,7 @@ export function MatchAdminCard({
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Delete Match"
-        description={`Delete match #${match.matchNumber} between ${match.homeTeam?.name ?? 'TBD'} vs ${match.awayTeam?.name ?? 'TBD'}? This action cannot be undone.`}
+        description={`Delete match #${String(match.matchNumber)} between ${match.homeTeam?.name ?? 'TBD'} vs ${match.awayTeam?.name ?? 'TBD'}? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={() => void handleDeleteConfirm()}
         variant="destructive"

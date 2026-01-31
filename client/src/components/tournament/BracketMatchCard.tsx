@@ -80,7 +80,7 @@ export function BracketMatchCard({
         : null
 
       if (currentPts !== null) {
-        return `${sets} (${currentPts})`
+        return `${String(sets)} (${String(currentPts)})`
       }
       return String(sets)
     }
@@ -105,7 +105,9 @@ export function BracketMatchCard({
         <div className="flex items-center justify-between py-1">
           <Select
             value={teamId ?? '__TBD__'}
-            onValueChange={(value) => onAssignTeam(side, value === '__TBD__' ? null : value)}
+            onValueChange={(value) => {
+              onAssignTeam(side, value === '__TBD__' ? null : value)
+            }}
           >
             <SelectTrigger className="h-7 w-32 text-xs">
               <SelectValue placeholder="Select team" />
@@ -130,9 +132,7 @@ export function BracketMatchCard({
           winner ? 'font-semibold text-green-600 dark:text-green-400' : ''
         }`}
       >
-        <span className="truncate text-sm">
-          {team?.shortName ?? team?.name ?? 'TBD'}
-        </span>
+        <span className="truncate text-sm">{team?.shortName ?? team?.name ?? 'TBD'}</span>
         <span className={`ml-2 text-sm font-medium ${isLive ? 'text-red-500' : ''}`}>
           {getScore(side)}
         </span>
@@ -159,19 +159,13 @@ export function BracketMatchCard({
   )
 
   if (mode === 'spectator') {
-    return (
-      <Link to={`/tournaments/${tournamentSlug}/matches/${match.id}`}>
-        {cardContent}
-      </Link>
-    )
+    return <Link to={`/tournaments/${tournamentSlug}/matches/${match.id}`}>{cardContent}</Link>
   }
 
   // Admin mode - wrap with link to scoring page if match has teams assigned
   if (match.homeTeam !== null || match.awayTeam !== null) {
     return (
-      <Link to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`}>
-        {cardContent}
-      </Link>
+      <Link to={`/tournaments/${tournamentSlug}/admin/matches/${match.id}`}>{cardContent}</Link>
     )
   }
 

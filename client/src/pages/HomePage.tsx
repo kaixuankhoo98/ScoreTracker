@@ -2,13 +2,7 @@ import { Link } from 'react-router-dom'
 import { Plus, Trophy, Users, Calendar } from 'lucide-react'
 import { useTournaments } from '@/api/tournaments'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 const statusColors: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'live'> = {
@@ -27,9 +21,7 @@ export function HomePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tournaments</h1>
-          <p className="text-muted-foreground">
-            Create and manage your sports tournaments
-          </p>
+          <p className="text-muted-foreground">Create and manage your sports tournaments</p>
         </div>
         <Button asChild>
           <Link to="/tournaments/new">
@@ -80,18 +72,12 @@ export function HomePage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {data?.tournaments.map((tournament) => (
-            <Link
-              key={tournament.id}
-              to={`/tournaments/${tournament.slug}`}
-              className="block"
-            >
+            <Link key={tournament.id} to={`/tournaments/${tournament.slug}`} className="block">
               <Card className="h-full transition-colors hover:bg-muted/50">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="line-clamp-1">
-                        {tournament.name}
-                      </CardTitle>
+                      <CardTitle className="line-clamp-1">{tournament.name}</CardTitle>
                       <CardDescription className="line-clamp-1">
                         {tournament.sport.name} - {tournament.format.replace('_', ' ')}
                       </CardDescription>

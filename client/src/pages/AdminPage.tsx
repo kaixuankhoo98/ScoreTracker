@@ -20,13 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
@@ -63,8 +57,7 @@ type PasswordData = z.infer<typeof passwordSchema>
 export function AdminPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: tournament, isLoading } = useTournament(slug ?? '')
-  const { isAuthenticated, isVerifying, login, tryRestoreSession } =
-    useTournamentAuth(slug ?? '')
+  const { isAuthenticated, isVerifying, login, tryRestoreSession } = useTournamentAuth(slug ?? '')
   const addTeamMutation = useAddTeam(slug ?? '')
   const addTeamsBulkMutation = useAddTeamsBulk(slug ?? '')
   const deleteTeamMutation = useDeleteTeam(slug ?? '')
@@ -126,10 +119,8 @@ export function AdminPage() {
       .map((name) => name.trim())
       .filter((name) => name.length > 0)
 
-    await addTeamsBulkMutation.mutateAsync(
-      teamNames.map((name) => ({ name }))
-    )
-    toast.success(`${teamNames.length} teams added`)
+    await addTeamsBulkMutation.mutateAsync(teamNames.map((name) => ({ name })))
+    toast.success(`${String(teamNames.length)} teams added`)
     bulkForm.reset()
     setBulkAddOpen(false)
   }
@@ -139,7 +130,7 @@ export function AdminPage() {
   }, [])
 
   const onDeleteTeamConfirm = async () => {
-    if (deleteTeamId) {
+    if (deleteTeamId !== null) {
       await deleteTeamMutation.mutateAsync(deleteTeamId)
       toast.success('Team deleted')
       setDeleteTeamId(null)
@@ -189,9 +180,7 @@ export function AdminPage() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">
-            Tournament not found
-          </p>
+          <p className="text-center text-muted-foreground">Tournament not found</p>
         </CardContent>
       </Card>
     )
@@ -204,9 +193,7 @@ export function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Admin Access</CardTitle>
-            <CardDescription>
-              Enter the admin password to manage {tournament.name}
-            </CardDescription>
+            <CardDescription>Enter the admin password to manage {tournament.name}</CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -215,11 +202,7 @@ export function AdminPage() {
             >
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...passwordForm.register('password')}
-                />
+                <Input id="password" type="password" {...passwordForm.register('password')} />
                 {passwordForm.formState.errors.password?.message !== undefined && (
                   <p className="text-sm text-destructive">
                     {passwordForm.formState.errors.password.message}
@@ -237,8 +220,7 @@ export function AdminPage() {
   }
 
   const canGenerateMatches = tournament.teams.length >= 2
-  const canStart =
-    tournament.status === 'DRAFT' && tournament.matches.length > 0
+  const canStart = tournament.status === 'DRAFT' && tournament.matches.length > 0
 
   // Filter knockout matches for bracket editor
   const knockoutMatches = tournament.matches.filter((m) =>
@@ -275,23 +257,16 @@ export function AdminPage() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Add Multiple Teams</DialogTitle>
-                      <DialogDescription>
-                        Enter one team name per line
-                      </DialogDescription>
+                      <DialogDescription>Enter one team name per line</DialogDescription>
                     </DialogHeader>
-                    <form
-                      onSubmit={(e) => void bulkForm.handleSubmit(onBulkAdd)(e)}
-                    >
+                    <form onSubmit={(e) => void bulkForm.handleSubmit(onBulkAdd)(e)}>
                       <Textarea
                         placeholder="Team 1&#10;Team 2&#10;Team 3"
                         rows={6}
                         {...bulkForm.register('teams')}
                       />
                       <DialogFooter className="mt-4">
-                        <Button
-                          type="submit"
-                          disabled={addTeamsBulkMutation.isPending}
-                        >
+                        <Button type="submit" disabled={addTeamsBulkMutation.isPending}>
                           Add Teams
                         </Button>
                       </DialogFooter>
@@ -332,10 +307,7 @@ export function AdminPage() {
                         />
                       </div>
                       <DialogFooter>
-                        <Button
-                          type="submit"
-                          disabled={addTeamMutation.isPending}
-                        >
+                        <Button type="submit" disabled={addTeamMutation.isPending}>
                           Add Team
                         </Button>
                       </DialogFooter>
@@ -347,9 +319,7 @@ export function AdminPage() {
           </CardHeader>
           <CardContent>
             {tournament.teams.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                No teams added yet
-              </p>
+              <p className="text-center text-muted-foreground py-4">No teams added yet</p>
             ) : (
               <div className="space-y-2">
                 {tournament.teams.map((team) => (
@@ -360,15 +330,15 @@ export function AdminPage() {
                     <div>
                       <span className="font-medium">{team.name}</span>
                       {team.shortName !== null && (
-                        <span className="ml-2 text-muted-foreground">
-                          ({team.shortName})
-                        </span>
+                        <span className="ml-2 text-muted-foreground">({team.shortName})</span>
                       )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onDeleteTeamClick(team.id)}
+                      onClick={() => {
+                        onDeleteTeamClick(team.id)
+                      }}
                       disabled={deleteTeamMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -410,20 +380,14 @@ export function AdminPage() {
               </p>
               <Button
                 onClick={onGenerateMatchesClick}
-                disabled={
-                  !canGenerateMatches || generateMatchesMutation.isPending
-                }
+                disabled={!canGenerateMatches || generateMatchesMutation.isPending}
                 variant="outline"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                {tournament.matches.length > 0
-                  ? 'Regenerate Matches'
-                  : 'Generate Matches'}
+                {tournament.matches.length > 0 ? 'Regenerate Matches' : 'Generate Matches'}
               </Button>
               {!canGenerateMatches && (
-                <p className="text-sm text-destructive">
-                  Add at least 2 teams to generate matches
-                </p>
+                <p className="text-sm text-destructive">Add at least 2 teams to generate matches</p>
               )}
             </div>
           </CardContent>
@@ -459,7 +423,8 @@ export function AdminPage() {
               <div>
                 <CardTitle>Matches ({tournament.matches.length})</CardTitle>
                 <CardDescription>
-                  Click on a match to manage scoring. Hover over scheduled matches to edit or delete.
+                  Click on a match to manage scoring. Hover over scheduled matches to edit or
+                  delete.
                 </CardDescription>
               </div>
               <Button
@@ -543,7 +508,9 @@ export function AdminPage() {
 
       <ConfirmDialog
         open={deleteTeamId !== null}
-        onOpenChange={(open) => !open && setDeleteTeamId(null)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTeamId(null)
+        }}
         title="Delete Team"
         description="Are you sure you want to delete this team? This action cannot be undone."
         confirmLabel="Delete"

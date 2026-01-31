@@ -1,4 +1,4 @@
-import { Server as HttpServer } from 'http'
+import { type Server as HttpServer } from 'http'
 import { Server } from 'socket.io'
 import type {
   ClientToServerEvents,
@@ -93,6 +93,9 @@ export function broadcastPeriodChanged(matchId: string, data: PeriodChangedPaylo
   getIO().to(`match:${matchId}`).emit('period_changed', data)
 }
 
-export function broadcastTournamentMatchUpdate(tournamentId: string, data: TournamentMatchUpdatePayload) {
+export function broadcastTournamentMatchUpdate(
+  tournamentId: string,
+  data: TournamentMatchUpdatePayload
+) {
   getIO().to(`tournament:${tournamentId}`).emit('tournament_match_update', data)
 }

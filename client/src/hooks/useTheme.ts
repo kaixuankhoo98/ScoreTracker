@@ -34,7 +34,9 @@ let currentTheme: Theme = getStoredTheme()
 const listeners = new Set<() => void>()
 
 function notifyListeners() {
-  listeners.forEach((listener) => listener())
+  listeners.forEach((listener) => {
+    listener()
+  })
 }
 
 function subscribe(listener: () => void) {
@@ -75,7 +77,9 @@ export function useTheme() {
     }
 
     mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+    }
   }, [])
 
   const cycleTheme = useCallback(() => {

@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useDeleteMatch } from '@/api/matches'
 import type { Team, MatchStage } from '@shared/schemas'
 
@@ -39,6 +42,7 @@ export function MatchAdminCard({
   onEdit,
 }: MatchAdminCardProps) {
   const deleteMatchMutation = useDeleteMatch(match.id, tournamentSlug)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -55,16 +59,16 @@ export function MatchAdminCard({
     })
   }
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (
-      confirm(
-        `Delete match #${match.matchNumber} between ${match.homeTeam?.name ?? 'TBD'} vs ${match.awayTeam?.name ?? 'TBD'}?`
-      )
-    ) {
-      await deleteMatchMutation.mutateAsync()
-    }
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    await deleteMatchMutation.mutateAsync()
+    toast.success('Match deleted')
+    setDeleteDialogOpen(false)
   }
 
   const isScheduled = match.status === 'SCHEDULED'
@@ -119,7 +123,7 @@ export function MatchAdminCard({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={(e) => void handleDelete(e)}
+            onClick={handleDeleteClick}
             disabled={deleteMatchMutation.isPending}
             title="Delete match"
           >
@@ -127,6 +131,17 @@ export function MatchAdminCard({
           </Button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Match"
+        description={`Delete match #${match.matchNumber} between ${match.homeTeam?.name ?? 'TBD'} vs ${match.awayTeam?.name ?? 'TBD'}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => void handleDeleteConfirm()}
+        variant="destructive"
+        isPending={deleteMatchMutation.isPending}
+      />
     </div>
   )
 }

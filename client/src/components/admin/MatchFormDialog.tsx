@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { format, parseISO } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -100,9 +101,7 @@ export function MatchFormDialog({
   // Format datetime-local value for input
   const formatDateTimeLocal = (isoString?: string | null) => {
     if (!isoString) return ''
-    const date = new Date(isoString)
-    // Format: YYYY-MM-DDTHH:mm
-    return date.toISOString().slice(0, 16)
+    return format(parseISO(isoString), "yyyy-MM-dd'T'HH:mm")
   }
 
   return (

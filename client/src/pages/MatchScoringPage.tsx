@@ -8,6 +8,7 @@ import {
   Undo2,
   SkipForward,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   useMatch,
   useStartMatch,
@@ -30,6 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { MatchScoreboard } from '@/components/match/MatchScoreboard'
 
 export function MatchScoringPage() {
@@ -47,6 +49,7 @@ export function MatchScoringPage() {
 
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [endMatchDialogOpen, setEndMatchDialogOpen] = useState(false)
 
   // Subscribe to real-time updates when component mounts
   useState(() => {
@@ -134,20 +137,26 @@ export function MatchScoringPage() {
 
   const handleStart = async () => {
     await startMutation.mutateAsync()
+    toast.success('Match started')
   }
 
   const handlePause = async () => {
     await pauseMutation.mutateAsync()
   }
 
-  const handleEnd = async () => {
-    if (confirm('Are you sure you want to end this match?')) {
-      await endMutation.mutateAsync()
-    }
+  const handleEndClick = () => {
+    setEndMatchDialogOpen(true)
+  }
+
+  const handleEndConfirm = async () => {
+    await endMutation.mutateAsync()
+    toast.success('Match ended')
+    setEndMatchDialogOpen(false)
   }
 
   const handleUndo = async () => {
     await undoMutation.mutateAsync()
+    toast.success('Score undone')
   }
 
   const handleNextPeriod = async () => {
@@ -224,7 +233,7 @@ export function MatchScoringPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => void handleEnd()}
+                onClick={handleEndClick}
                 disabled={endMutation.isPending}
               >
                 <Square className="mr-2 h-4 w-4" />
@@ -347,6 +356,17 @@ export function MatchScoringPage() {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={endMatchDialogOpen}
+        onOpenChange={setEndMatchDialogOpen}
+        title="End Match"
+        description="Are you sure you want to end this match? This action cannot be undone."
+        confirmLabel="End Match"
+        onConfirm={() => void handleEndConfirm()}
+        variant="destructive"
+        isPending={endMutation.isPending}
+      />
     </div>
   )
 }

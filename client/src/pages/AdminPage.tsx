@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Trash2, Play, RefreshCw } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import {
   useTournament,
   useAddTeam,
@@ -36,6 +37,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { MatchFormDialog } from '@/components/admin/MatchFormDialog'
 import { MatchAdminCard } from '@/components/admin/MatchAdminCard'
 import { BracketEditor } from '@/components/admin/BracketEditor'
@@ -84,6 +86,8 @@ export function AdminPage() {
     scheduledAt?: string | null
     status: string
   } | null>(null)
+  const [deleteTeamId, setDeleteTeamId] = useState<string | null>(null)
+  const [generateMatchesDialogOpen, setGenerateMatchesDialogOpen] = useState(false)
 
   // Try to restore session on mount
   useState(() => {
@@ -111,6 +115,7 @@ export function AdminPage() {
 
   const onAddTeam = async (data: TeamFormData) => {
     await addTeamMutation.mutateAsync(data)
+    toast.success('Team added')
     teamForm.reset()
     setAddTeamOpen(false)
   }
@@ -124,35 +129,41 @@ export function AdminPage() {
     await addTeamsBulkMutation.mutateAsync(
       teamNames.map((name) => ({ name }))
     )
+    toast.success(`${teamNames.length} teams added`)
     bulkForm.reset()
     setBulkAddOpen(false)
   }
 
-  const onDeleteTeam = useCallback(
-    async (teamId: string) => {
-      if (confirm('Are you sure you want to delete this team?')) {
-        await deleteTeamMutation.mutateAsync(teamId)
-      }
-    },
-    [deleteTeamMutation]
-  )
+  const onDeleteTeamClick = useCallback((teamId: string) => {
+    setDeleteTeamId(teamId)
+  }, [])
 
-  const onGenerateMatches = async () => {
-    if (
-      confirm(
-        'This will delete existing matches and generate new ones. Continue?'
-      )
-    ) {
-      await generateMatchesMutation.mutateAsync({})
+  const onDeleteTeamConfirm = async () => {
+    if (deleteTeamId) {
+      await deleteTeamMutation.mutateAsync(deleteTeamId)
+      toast.success('Team deleted')
+      setDeleteTeamId(null)
     }
+  }
+
+  const onGenerateMatchesClick = () => {
+    setGenerateMatchesDialogOpen(true)
+  }
+
+  const onGenerateMatchesConfirm = async () => {
+    await generateMatchesMutation.mutateAsync({})
+    toast.success('Matches generated')
+    setGenerateMatchesDialogOpen(false)
   }
 
   const onStartTournament = async () => {
     await updateTournamentMutation.mutateAsync({ status: 'IN_PROGRESS' })
+    toast.success('Tournament started')
   }
 
   const onCreateMatch = async (data: CreateMatch) => {
     await createMatchMutation.mutateAsync(data)
+    toast.success('Match created')
     setMatchFormOpen(false)
   }
 
@@ -357,7 +368,7 @@ export function AdminPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => void onDeleteTeam(team.id)}
+                      onClick={() => onDeleteTeamClick(team.id)}
                       disabled={deleteTeamMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -398,7 +409,7 @@ export function AdminPage() {
                 {tournament.format.replace(/_/g, ' ')})
               </p>
               <Button
-                onClick={() => void onGenerateMatches()}
+                onClick={onGenerateMatchesClick}
                 disabled={
                   !canGenerateMatches || generateMatchesMutation.isPending
                 }
@@ -528,6 +539,27 @@ export function AdminPage() {
             ? Math.max(...tournament.matches.map((m) => m.matchNumber)) + 1
             : 1
         }
+      />
+
+      <ConfirmDialog
+        open={deleteTeamId !== null}
+        onOpenChange={(open) => !open && setDeleteTeamId(null)}
+        title="Delete Team"
+        description="Are you sure you want to delete this team? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => void onDeleteTeamConfirm()}
+        variant="destructive"
+        isPending={deleteTeamMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={generateMatchesDialogOpen}
+        onOpenChange={setGenerateMatchesDialogOpen}
+        title="Generate Matches"
+        description="This will delete existing matches and generate new ones. Continue?"
+        confirmLabel="Generate"
+        onConfirm={() => void onGenerateMatchesConfirm()}
+        isPending={generateMatchesMutation.isPending}
       />
     </div>
   )

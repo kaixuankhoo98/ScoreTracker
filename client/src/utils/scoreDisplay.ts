@@ -19,8 +19,11 @@ interface SportData {
 }
 
 export function getSetBasedDisplay(match: MatchData, sport: SportData): SetBasedDisplay {
-  // Detect set-based sports by pointsToWinPeriod being defined
-  const isSetBased = sport.pointsToWinPeriod !== null && sport.pointsToWinPeriod !== undefined
+  // Detect set-based sports by pointsToWinPeriod being a positive number,
+  // or by the period name indicating sets/games
+  const isSetBased =
+    (typeof sport.pointsToWinPeriod === 'number' && sport.pointsToWinPeriod > 0) ||
+    ['Set', 'Game'].includes(sport.periodName)
 
   if (!isSetBased) {
     return {

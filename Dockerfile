@@ -14,7 +14,7 @@ COPY shared/package*.json ./shared/
 
 # Install dependencies
 RUN npm install
-RUN cd client && npm install
+RUN cd client && npm install --legacy-peer-deps
 RUN cd server && npm install
 RUN cd shared && npm install
 
@@ -41,8 +41,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY server/package*.json ./server/
 
-# Install production dependencies and tsx for seeding
-RUN cd server && npm install --omit=dev && npm install tsx
+# Install production dependencies
+RUN cd server && npm install --omit=dev
+
+# Install tsx globally for seeding
+RUN npm install -g tsx
 
 # Copy Prisma schema and seed script
 COPY server/prisma ./server/prisma
@@ -56,6 +59,6 @@ COPY --from=builder /app/client/dist ./server/dist/server/public
 # Expose port
 EXPOSE 3000
 
-# Start the server with migrations
+# Start the server with migrations and seeding
 WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npx prisma db seed; node dist/server/src/index.js"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npx prisma db seed && node dist/server/src/index.js"]

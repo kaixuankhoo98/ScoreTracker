@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dialog'
 import { MatchFormDialog } from '@/components/admin/MatchFormDialog'
 import { MatchAdminCard } from '@/components/admin/MatchAdminCard'
+import { BracketEditor } from '@/components/admin/BracketEditor'
 import type { CreateMatch, MatchStage } from '@shared/schemas'
 
 const teamFormSchema = z.object({
@@ -228,6 +229,11 @@ export function AdminPage() {
   const canStart =
     tournament.status === 'DRAFT' && tournament.matches.length > 0
 
+  // Filter knockout matches for bracket editor
+  const knockoutMatches = tournament.matches.filter((m) =>
+    ['ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'FINAL', 'THIRD_PLACE'].includes(m.stage)
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -411,6 +417,29 @@ export function AdminPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Bracket Editor for Knockout Tournaments */}
+        {knockoutMatches.length > 0 && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Bracket</CardTitle>
+              <CardDescription>
+                Assign teams to knockout matches. Click on a match to manage scoring.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BracketEditor
+                matches={knockoutMatches}
+                teams={tournament.teams}
+                tournamentSlug={slug ?? ''}
+                sport={{
+                  periodName: tournament.sport.periodName,
+                  pointsToWinPeriod: tournament.sport.pointsToWinPeriod ?? null,
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Matches */}
         <Card className="md:col-span-2">

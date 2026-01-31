@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MatchCard } from '@/components/match/MatchCard'
 import { StandingsTable } from '@/components/tournament/StandingsTable'
+import { KnockoutBracket } from '@/components/tournament/KnockoutBracket'
 
 const statusColors: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'live'> = {
   DRAFT: 'secondary',
@@ -88,6 +89,27 @@ export function TournamentPage() {
   const liveMatches = tournament.matches.filter((m) => m.status === 'LIVE')
   const upcomingMatches = tournament.matches.filter((m) => m.status === 'SCHEDULED')
   const completedMatches = tournament.matches.filter((m) => m.status === 'COMPLETED')
+
+  // Categorize matches for different views
+  const groupMatches = tournament.matches.filter((m) => m.stage === 'GROUP')
+  const knockoutMatches = tournament.matches.filter((m) =>
+    ['ROUND_OF_16', 'QUARTERFINAL', 'SEMIFINAL', 'FINAL', 'THIRD_PLACE'].includes(m.stage)
+  )
+
+  // Determine which tabs to show based on tournament format
+  const hasKnockout = knockoutMatches.length > 0 ||
+    tournament.format === 'SINGLE_ELIMINATION' ||
+    tournament.format === 'GROUP_KNOCKOUT'
+  const hasGroups = groupMatches.length > 0 ||
+    tournament.format === 'GROUP_KNOCKOUT' ||
+    tournament.format === 'ROUND_ROBIN'
+
+  // Determine default tab based on format
+  const getDefaultTab = () => {
+    if (tournament.format === 'SINGLE_ELIMINATION') return 'bracket'
+    if (tournament.format === 'ROUND_ROBIN') return 'matches'
+    return 'matches' // GROUP_KNOCKOUT shows matches by default
+  }
 
   return (
     <div className="space-y-6">
@@ -174,10 +196,11 @@ export function TournamentPage() {
         </div>
       )}
 
-      <Tabs defaultValue="matches">
+      <Tabs defaultValue={getDefaultTab()}>
         <TabsList>
           <TabsTrigger value="matches">All Matches</TabsTrigger>
-          <TabsTrigger value="standings">Standings</TabsTrigger>
+          {hasKnockout && <TabsTrigger value="bracket">Bracket</TabsTrigger>}
+          {hasGroups && <TabsTrigger value="standings">Standings</TabsTrigger>}
           <TabsTrigger value="teams">Teams</TabsTrigger>
         </TabsList>
 
@@ -224,6 +247,32 @@ export function TournamentPage() {
             </>
           )}
         </TabsContent>
+
+        {hasKnockout && (
+          <TabsContent value="bracket">
+            {knockoutMatches.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  Knockout bracket will appear once matches are generated.
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <KnockoutBracket
+                    matches={knockoutMatches}
+                    mode="spectator"
+                    tournamentSlug={slug ?? ''}
+                    sport={{
+                      periodName: tournament.sport.periodName,
+                      pointsToWinPeriod: tournament.sport.pointsToWinPeriod ?? null,
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
 
         <TabsContent value="standings">
           <StandingsTable

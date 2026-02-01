@@ -1,16 +1,24 @@
-import { beforeAll, afterAll, afterEach } from 'vitest'
+import { beforeAll, afterAll, afterEach, vi } from 'vitest'
+import { resetPrismaMock } from './helpers/prisma-mock.js'
+import { resetSocketMocks } from './helpers/socket-mock.js'
+import { resetFactoryCounter } from './helpers/factories.js'
 
 beforeAll(async () => {
-  // Setup that runs before all tests
-  // Add any global setup here (e.g., database connection, test data)
+  // Suppress console.error/log during tests unless DEBUG is set
+  if (!process.env.DEBUG) {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  }
 })
 
 afterEach(async () => {
-  // Cleanup after each test
-  // Add any per-test cleanup here
+  // Reset all mocks between tests
+  resetPrismaMock()
+  resetSocketMocks()
+  resetFactoryCounter()
 })
 
 afterAll(async () => {
-  // Cleanup after all tests complete
-  // Add any global cleanup here (e.g., close database connections)
+  // Restore console methods
+  vi.restoreAllMocks()
 })

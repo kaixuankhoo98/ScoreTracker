@@ -38,6 +38,7 @@ interface Match {
   round: number
   matchNumber: number
   winner?: Team | null
+  isBye?: boolean
 }
 
 interface SportConfig {
@@ -139,6 +140,7 @@ export function KnockoutBracket({
 
     const isLive = match.status === 'LIVE'
     const isCompleted = match.status === 'COMPLETED'
+    const isBye = match.isBye === true
 
     const setDisplay = getSetBasedDisplay(
       {
@@ -176,8 +178,18 @@ export function KnockoutBracket({
       const teamId = side === 'home' ? match.homeTeamId : match.awayTeamId
       const winner = isWinner(side)
 
-      // Admin mode with TBD slot - show team selector
-      if (canAssign && team === null) {
+      // For bye matches, show "BYE" for the null team slot
+      if (isBye && team === null) {
+        return (
+          <SeedTeam className="!bg-muted/50 !text-muted-foreground !justify-between !px-2">
+            <span className="truncate text-xs italic">BYE</span>
+            <span className="text-xs">-</span>
+          </SeedTeam>
+        )
+      }
+
+      // Admin mode with TBD slot - show team selector (not for bye matches)
+      if (canAssign && team === null && !isBye) {
         return (
           <SeedTeam className="!bg-card !text-foreground !justify-between !px-2">
             <Select
@@ -207,18 +219,19 @@ export function KnockoutBracket({
         <SeedTeam
           className={`!bg-card !text-foreground !justify-between !px-2 ${
             winner ? '!font-semibold !text-green-600 dark:!text-green-400' : ''
-          }`}
+          } ${isBye && team !== null ? '!font-semibold' : ''}`}
         >
           <span className="truncate text-xs">{team?.shortName ?? team?.name ?? 'TBD'}</span>
           <span className={`ml-2 text-xs font-medium ${isLive ? 'text-red-500' : ''}`}>
-            {getScore(side)}
+            {isBye ? 'W' : getScore(side)}
           </span>
         </SeedTeam>
       )
     }
 
-    // Determine link URL
+    // Determine link URL - bye matches are not clickable
     const getLinkUrl = (): string | null => {
+      if (isBye) return null
       if (mode === 'spectator') {
         return `/tournaments/${tournamentSlug}/matches/${match.id}`
       }
@@ -233,10 +246,15 @@ export function KnockoutBracket({
 
     const cardInner = (
       <>
-        {isLive && (
+        {isLive && !isBye && (
           <div className="px-2 pt-1 flex items-center gap-1 bg-card rounded-t-md">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
             <span className="text-xs text-red-500">LIVE</span>
+          </div>
+        )}
+        {isBye && (
+          <div className="px-2 pt-1 flex items-center gap-1 bg-muted/30 rounded-t-md">
+            <span className="text-xs text-muted-foreground italic">BYE</span>
           </div>
         )}
         {renderTeamRow('home')}
@@ -248,7 +266,13 @@ export function KnockoutBracket({
     return (
       <Seed mobileBreakpoint={breakpoint}>
         <SeedItem
-          className={`!bg-card !rounded-md !shadow-sm ${isLive ? '!border !border-red-500/50' : '!border !border-border'}`}
+          className={`bracket-seed-item !bg-card !rounded-md !overflow-hidden !shadow-sm ${
+            isBye
+              ? '!border !border-dashed !border-muted-foreground/30 !opacity-70'
+              : isLive
+                ? '!border !border-red-500/50'
+                : '!border !border-border'
+          }`}
         >
           {linkUrl !== null ? (
             <Link to={linkUrl} className="block hover:bg-muted/50 rounded-md">

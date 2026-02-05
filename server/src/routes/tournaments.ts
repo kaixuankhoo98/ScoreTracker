@@ -263,12 +263,15 @@ router.post('/:slug/generate-matches', loadTournament, requireAdmin, async (req,
     })
 
     // Generate tournament structure
-    const options: { groupCount?: number; advancingPerGroup?: number } = {}
+    const options: { groupCount?: number; advancingPerGroup?: number; useSeeding?: boolean } = {}
     if (parsed.data.groupCount !== undefined) {
       options.groupCount = parsed.data.groupCount
     }
     if (parsed.data.advancingPerGroup !== undefined) {
       options.advancingPerGroup = parsed.data.advancingPerGroup
+    }
+    if (parsed.data.useSeeding !== undefined) {
+      options.useSeeding = parsed.data.useSeeding
     }
     const generated = generateTournamentMatches(tournament.format, tournament.teams.length, options)
 
@@ -305,6 +308,16 @@ router.post('/:slug/generate-matches', loadTournament, requireAdmin, async (req,
       const awayTeam = match.awayTeamIndex !== null ? tournament.teams[match.awayTeamIndex] : null
       const groupId = match.groupIndex !== undefined ? groupMap.get(match.groupIndex) : null
 
+      // For bye matches, set status to COMPLETED and winner to the non-null team
+      const isBye = match.isBye === true
+      let winnerId: string | null = null
+      let status: 'SCHEDULED' | 'COMPLETED' = 'SCHEDULED'
+
+      if (isBye) {
+        status = 'COMPLETED'
+        winnerId = homeTeam?.id ?? awayTeam?.id ?? null
+      }
+
       const created = await prisma.match.create({
         data: {
           tournamentId: tournament.id,
@@ -314,6 +327,9 @@ router.post('/:slug/generate-matches', loadTournament, requireAdmin, async (req,
           round: match.round,
           matchNumber: match.matchNumber,
           stage: match.stage,
+          isBye,
+          status,
+          winnerId,
         },
       })
       matches.push(created)

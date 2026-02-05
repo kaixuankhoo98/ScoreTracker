@@ -22,6 +22,7 @@ interface MatchAdminCardProps {
     scheduledAt?: string | null
     homeTeam: Team | null
     awayTeam: Team | null
+    isBye?: boolean
   }
   tournamentSlug: string
   onEdit: (match: {
@@ -88,11 +89,11 @@ export function MatchAdminCard({ match, tournamentSlug, onEdit }: MatchAdminCard
         </div>
         <div className="mt-2 space-y-1">
           <div className="flex justify-between">
-            <span>{match.homeTeam?.name ?? 'TBD'}</span>
+            <span>{match.homeTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}</span>
             <span className="font-bold">{match.homeScore}</span>
           </div>
           <div className="flex justify-between">
-            <span>{match.awayTeam?.name ?? 'TBD'}</span>
+            <span>{match.awayTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}</span>
             <span className="font-bold">{match.awayScore}</span>
           </div>
         </div>
@@ -127,7 +128,7 @@ export function MatchAdminCard({ match, tournamentSlug, onEdit }: MatchAdminCard
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Delete Match"
-        description={`Delete match #${String(match.matchNumber)} between ${match.homeTeam?.name ?? 'TBD'} vs ${match.awayTeam?.name ?? 'TBD'}? This action cannot be undone.`}
+        description={`Delete match #${String(match.matchNumber)} between ${match.homeTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')} vs ${match.awayTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={() => void handleDeleteConfirm()}
         variant="destructive"

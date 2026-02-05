@@ -1,7 +1,11 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { loadTournament, requireAdmin } from '../middleware/auth.js'
-import { CreateTeamSchema, UpdateTeamSchema } from '../../../shared/src/schemas.js'
+import {
+  CreateTeamSchema,
+  UpdateTeamSchema,
+  BulkUpdateSeedsSchema,
+} from '../../../shared/src/schemas.js'
 
 const router = Router({ mergeParams: true })
 
@@ -133,6 +137,46 @@ router.post('/bulk', loadTournament, requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error creating teams:', error)
     res.status(500).json({ success: false, error: 'Failed to create teams' })
+  }
+})
+
+// PUT /api/tournaments/:slug/teams/seeds - Bulk update seeds (admin only)
+router.put('/seeds', loadTournament, requireAdmin, async (req, res) => {
+  try {
+    if (!req.tournament) {
+      res.status(404).json({ success: false, error: 'Tournament not found' })
+      return
+    }
+
+    const parsed = BulkUpdateSeedsSchema.safeParse(req.body)
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: parsed.error.message })
+      return
+    }
+
+    // Update all seeds in a transaction
+    await prisma.$transaction(
+      parsed.data.seeds.map(({ teamId, seed }) =>
+        prisma.team.updateMany({
+          where: {
+            id: teamId,
+            tournamentId: req.tournament!.id,
+          },
+          data: { seed },
+        })
+      )
+    )
+
+    // Fetch updated teams
+    const teams = await prisma.team.findMany({
+      where: { tournamentId: req.tournament.id },
+      orderBy: [{ seed: 'asc' }, { name: 'asc' }],
+    })
+
+    res.json({ success: true, data: teams })
+  } catch (error) {
+    console.error('Error updating seeds:', error)
+    res.status(500).json({ success: false, error: 'Failed to update seeds' })
   }
 })
 

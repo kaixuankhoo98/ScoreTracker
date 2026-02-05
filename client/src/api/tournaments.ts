@@ -8,6 +8,7 @@ import type {
   CreateTeam,
   CreateMatch,
   GenerateMatches,
+  BulkUpdateSeeds,
 } from '@shared/schemas'
 
 // Extended tournament type with relations
@@ -44,6 +45,7 @@ export interface TournamentWithRelations extends Omit<Tournament, 'sportId'> {
     homeTeam: Team | null
     awayTeam: Team | null
     winner: Team | null
+    isBye?: boolean
   }[]
   _count: {
     teams: number
@@ -164,6 +166,12 @@ async function deleteTeam(slug: string, teamId: string): Promise<void> {
   await api.delete(`/tournaments/${slug}/teams/${teamId}`)
 }
 
+// Bulk update seeds
+async function updateSeeds(slug: string, seeds: BulkUpdateSeeds['seeds']): Promise<Team[]> {
+  const response = await api.put<ApiResponse<Team[]>>(`/tournaments/${slug}/teams/seeds`, { seeds })
+  return response.data.data ?? []
+}
+
 // Create match
 async function createMatch(
   slug: string,
@@ -275,6 +283,17 @@ export function useDeleteTeam(slug: string) {
 
   return useMutation({
     mutationFn: (teamId: string) => deleteTeam(slug, teamId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(slug) })
+    },
+  })
+}
+
+export function useUpdateSeeds(slug: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (seeds: BulkUpdateSeeds['seeds']) => updateSeeds(slug, seeds),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tournamentKeys.detail(slug) })
     },

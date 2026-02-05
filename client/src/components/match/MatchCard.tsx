@@ -20,6 +20,7 @@ interface MatchCardProps {
     homeTeam: Team | null
     awayTeam: Team | null
     winner: Team | null
+    isBye?: boolean
   }
   tournamentSlug: string
   sport: {
@@ -104,11 +105,15 @@ export function MatchCard({ match, tournamentSlug, sport }: MatchCardProps) {
           <div className="flex items-center justify-between">
             <div className="space-y-3 flex-1">
               <div className="flex items-center justify-between">
-                <span className={getTeamStyle('home')}>{match.homeTeam?.name ?? 'TBD'}</span>
+                <span className={getTeamStyle('home')}>
+                  {match.homeTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
+                </span>
                 {renderScore('home')}
               </div>
               <div className="flex items-center justify-between">
-                <span className={getTeamStyle('away')}>{match.awayTeam?.name ?? 'TBD'}</span>
+                <span className={getTeamStyle('away')}>
+                  {match.awayTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
+                </span>
                 {renderScore('away')}
               </div>
             </div>

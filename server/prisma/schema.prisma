@@ -109,6 +109,7 @@ model Match {
   matchNumber     Int              @default(1)    // Match number within round
   stage           MatchStage       @default(GROUP) // GROUP, QUARTERFINAL, SEMIFINAL, FINAL, etc.
   status          MatchStatus      @default(SCHEDULED)
+  isBye           Boolean          @default(false) // True for bye matches where team auto-advances
   scheduledAt     DateTime?
   startedAt       DateTime?
   endedAt         DateTime?

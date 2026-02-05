@@ -15,6 +15,7 @@ interface MatchScoreboardProps {
     winner?: { id: string } | null
     homeTeamId?: string | null
     awayTeamId?: string | null
+    isBye?: boolean
   }
   sport: {
     periodName: string
@@ -91,7 +92,7 @@ export function MatchScoreboard({
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <h2 className={`text-lg font-semibold ${getWinnerStyle('home')}`}>
-                {match.homeTeam?.name ?? 'TBD'}
+                {match.homeTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
               </h2>
               <div className={`mt-2 text-5xl font-bold ${isLive ? 'text-red-500' : ''}`}>
                 {displayHomeScore}
@@ -110,7 +111,7 @@ export function MatchScoreboard({
             </div>
             <div>
               <h2 className={`text-lg font-semibold ${getWinnerStyle('away')}`}>
-                {match.awayTeam?.name ?? 'TBD'}
+                {match.awayTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
               </h2>
               <div className={`mt-2 text-5xl font-bold ${isLive ? 'text-red-500' : ''}`}>
                 {displayAwayScore}
@@ -152,7 +153,7 @@ export function MatchScoreboard({
         <div className="mt-6 grid grid-cols-3 gap-4 text-center">
           <div className="space-y-2">
             <h2 className={`text-xl font-bold ${getWinnerStyle('home')}`}>
-              {match.homeTeam?.name ?? 'TBD'}
+              {match.homeTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
             </h2>
             {match.homeTeam?.shortName !== undefined && match.homeTeam.shortName !== null && (
               <p className="text-sm text-muted-foreground">{match.homeTeam.shortName}</p>
@@ -167,7 +168,7 @@ export function MatchScoreboard({
 
           <div className="space-y-2">
             <h2 className={`text-xl font-bold ${getWinnerStyle('away')}`}>
-              {match.awayTeam?.name ?? 'TBD'}
+              {match.awayTeam?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
             </h2>
             {match.awayTeam?.shortName !== undefined && match.awayTeam.shortName !== null && (
               <p className="text-sm text-muted-foreground">{match.awayTeam.shortName}</p>

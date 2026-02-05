@@ -63,6 +63,15 @@ export const CreateTeamSchema = z.object({
 
 export const UpdateTeamSchema = CreateTeamSchema.partial()
 
+export const BulkUpdateSeedsSchema = z.object({
+  seeds: z.array(
+    z.object({
+      teamId: z.string(),
+      seed: z.number().int().positive(),
+    })
+  ),
+})
+
 // Tournament schemas
 export const TournamentSchema = z.object({
   id: z.string(),
@@ -113,6 +122,7 @@ export const MatchSchema = z.object({
   matchNumber: z.number().int().positive(),
   stage: MatchStageSchema,
   status: MatchStatusSchema,
+  isBye: z.boolean(),
   scheduledAt: z.iso.datetime().nullable(),
   startedAt: z.iso.datetime().nullable(),
   endedAt: z.iso.datetime().nullable(),
@@ -178,6 +188,7 @@ export const GenerateMatchesSchema = z.object({
   groupCount: z.number().int().min(1).max(8).optional(), // For group knockout
   teamsPerGroup: z.number().int().min(2).max(8).optional(),
   advancingPerGroup: z.number().int().min(1).max(4).optional(),
+  useSeeding: z.boolean().optional(), // If false, randomize team distribution
 })
 
 // API Response wrapper
@@ -204,6 +215,7 @@ export type TournamentGroup = z.infer<typeof TournamentGroupSchema>
 
 export type CreateTeam = z.infer<typeof CreateTeamSchema>
 export type UpdateTeam = z.infer<typeof UpdateTeamSchema>
+export type BulkUpdateSeeds = z.infer<typeof BulkUpdateSeedsSchema>
 export type CreateTournament = z.infer<typeof CreateTournamentSchema>
 export type UpdateTournament = z.infer<typeof UpdateTournamentSchema>
 export type CreateMatch = z.infer<typeof CreateMatchSchema>

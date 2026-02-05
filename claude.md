@@ -292,6 +292,17 @@ npm run db:seed          # Seed database
 # Linting
 npm run lint             # Lint all packages
 
+# Type Checking (no root tsconfig - must run per package)
+cd client && npx tsc --noEmit
+cd server && npx tsc --noEmit
+cd shared && npx tsc --noEmit
+
+# Testing
+npm test                 # Run all tests (client + server + shared)
+npm run test:client      # Cypress component tests
+npm run test:server      # Vitest
+npm run test:shared      # Vitest
+
 # Build
 npm run build            # Build for production
 ```

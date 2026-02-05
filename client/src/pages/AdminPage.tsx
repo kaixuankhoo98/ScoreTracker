@@ -1,6 +1,23 @@
 import { useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Play, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Play, RefreshCw, GripVertical } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -13,6 +30,7 @@ import {
   useGenerateMatches,
   useUpdateTournament,
   useCreateMatch,
+  useUpdateSeeds,
 } from '@/api/tournaments'
 import { useUpdateMatchById } from '@/api/matches'
 import { useTournamentAuth } from '@/hooks/useTournamentAuth'
@@ -31,6 +49,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { MatchFormDialog } from '@/components/admin/MatchFormDialog'
 import { MatchAdminCard } from '@/components/admin/MatchAdminCard'
@@ -54,6 +80,70 @@ type TeamFormData = z.infer<typeof teamFormSchema>
 type BulkTeamsData = z.infer<typeof bulkTeamsSchema>
 type PasswordData = z.infer<typeof passwordSchema>
 
+interface SortableTeamItemProps {
+  id: string
+  name: string
+  index: number
+  onMoveUp: () => void
+  onMoveDown: () => void
+  isFirst: boolean
+  isLast: boolean
+}
+
+function SortableTeamItem({
+  id,
+  name,
+  index,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
+}: SortableTeamItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 rounded-lg border p-2 bg-card ${isDragging ? 'shadow-lg z-10' : ''}`}
+    >
+      <div className="flex flex-col gap-0.5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5"
+          onClick={onMoveUp}
+          disabled={isFirst}
+        >
+          <span className="text-xs">▲</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-5 w-5"
+          onClick={onMoveDown}
+          disabled={isLast}
+        >
+          <span className="text-xs">▼</span>
+        </Button>
+      </div>
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <span className="w-6 text-sm text-muted-foreground">#{index + 1}</span>
+      <span className="font-medium flex-1">{name}</span>
+    </div>
+  )
+}
+
 export function AdminPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: tournament, isLoading } = useTournament(slug ?? '')
@@ -65,6 +155,7 @@ export function AdminPage() {
   const updateTournamentMutation = useUpdateTournament(slug ?? '')
   const createMatchMutation = useCreateMatch(slug ?? '')
   const updateMatchMutation = useUpdateMatchById(slug ?? '')
+  const updateSeedsMutation = useUpdateSeeds(slug ?? '')
 
   const [addTeamOpen, setAddTeamOpen] = useState(false)
   const [bulkAddOpen, setBulkAddOpen] = useState(false)
@@ -81,6 +172,33 @@ export function AdminPage() {
   } | null>(null)
   const [deleteTeamId, setDeleteTeamId] = useState<string | null>(null)
   const [generateMatchesDialogOpen, setGenerateMatchesDialogOpen] = useState(false)
+  const [seedEditorOpen, setSeedEditorOpen] = useState(false)
+  const [editingSeeds, setEditingSeeds] = useState<{ id: string; name: string; seed: number }[]>([])
+
+  // Generate matches config state
+  const [groupCount, setGroupCount] = useState(2)
+  const [advancingPerGroup, setAdvancingPerGroup] = useState(2)
+  const [useSeeding, setUseSeeding] = useState(true)
+
+  // Drag and drop sensors for seed editor
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over !== null && active.id !== over.id) {
+      setEditingSeeds((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
 
   // Try to restore session on mount
   useState(() => {
@@ -138,13 +256,76 @@ export function AdminPage() {
   }
 
   const onGenerateMatchesClick = () => {
+    // Set default group count based on team count
+    if (tournament) {
+      const teamCount = tournament.teams.length
+      const defaultGroups = Math.max(2, Math.min(4, Math.floor(teamCount / 4)))
+      setGroupCount(defaultGroups)
+    }
     setGenerateMatchesDialogOpen(true)
   }
 
   const onGenerateMatchesConfirm = async () => {
-    await generateMatchesMutation.mutateAsync({})
+    const options =
+      tournament?.format === 'GROUP_KNOCKOUT'
+        ? { groupCount, advancingPerGroup, useSeeding }
+        : { useSeeding }
+    await generateMatchesMutation.mutateAsync(options)
     toast.success('Matches generated')
     setGenerateMatchesDialogOpen(false)
+  }
+
+  const onOpenSeedEditor = () => {
+    if (tournament) {
+      // Initialize editing seeds from current team data
+      const seeds = tournament.teams.map((team, index) => ({
+        id: team.id,
+        name: team.name,
+        seed: team.seed ?? index + 1,
+      }))
+      // Sort by current seed
+      seeds.sort((a, b) => a.seed - b.seed)
+      setEditingSeeds(seeds)
+      setSeedEditorOpen(true)
+    }
+  }
+
+  const onSaveSeedsConfirm = async () => {
+    const seedUpdates = editingSeeds.map((team, index) => ({
+      teamId: team.id,
+      seed: index + 1, // Position in list = new seed
+    }))
+    await updateSeedsMutation.mutateAsync(seedUpdates)
+    toast.success('Seeds updated')
+    setSeedEditorOpen(false)
+  }
+
+  const moveTeamUp = (index: number) => {
+    if (index === 0) return
+    setEditingSeeds((prev) => {
+      const newSeeds = [...prev]
+      const temp = newSeeds[index - 1]
+      const current = newSeeds[index]
+      if (temp && current) {
+        newSeeds[index - 1] = current
+        newSeeds[index] = temp
+      }
+      return newSeeds
+    })
+  }
+
+  const moveTeamDown = (index: number) => {
+    setEditingSeeds((prev) => {
+      if (index >= prev.length - 1) return prev
+      const newSeeds = [...prev]
+      const temp = newSeeds[index + 1]
+      const current = newSeeds[index]
+      if (temp && current) {
+        newSeeds[index + 1] = current
+        newSeeds[index] = temp
+      }
+      return newSeeds
+    })
   }
 
   const onStartTournament = async () => {
@@ -248,6 +429,11 @@ export function AdminPage() {
             <div className="flex items-center justify-between">
               <CardTitle>Teams ({tournament.teams.length})</CardTitle>
               <div className="flex gap-2">
+                {tournament.teams.length >= 2 && (
+                  <Button variant="outline" size="sm" onClick={onOpenSeedEditor}>
+                    Edit Seeds
+                  </Button>
+                )}
                 <Dialog open={bulkAddOpen} onOpenChange={setBulkAddOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -322,16 +508,21 @@ export function AdminPage() {
               <p className="text-center text-muted-foreground py-4">No teams added yet</p>
             ) : (
               <div className="space-y-2">
-                {tournament.teams.map((team) => (
+                {tournament.teams.map((team, index) => (
                   <div
                     key={team.id}
                     className="flex items-center justify-between rounded-lg border p-3"
                   >
-                    <div>
-                      <span className="font-medium">{team.name}</span>
-                      {team.shortName !== null && (
-                        <span className="ml-2 text-muted-foreground">({team.shortName})</span>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground w-6">
+                        #{team.seed ?? index + 1}
+                      </span>
+                      <div>
+                        <span className="font-medium">{team.name}</span>
+                        {team.shortName !== null && (
+                          <span className="ml-2 text-muted-foreground">({team.shortName})</span>
+                        )}
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -519,15 +710,204 @@ export function AdminPage() {
         isPending={deleteTeamMutation.isPending}
       />
 
-      <ConfirmDialog
-        open={generateMatchesDialogOpen}
-        onOpenChange={setGenerateMatchesDialogOpen}
-        title="Generate Matches"
-        description="This will delete existing matches and generate new ones. Continue?"
-        confirmLabel="Generate"
-        onConfirm={() => void onGenerateMatchesConfirm()}
-        isPending={generateMatchesMutation.isPending}
-      />
+      {/* Generate Matches Config Dialog */}
+      <Dialog open={generateMatchesDialogOpen} onOpenChange={setGenerateMatchesDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate Matches</DialogTitle>
+            <DialogDescription>
+              {tournament.matches.length > 0
+                ? 'This will delete existing matches and generate new ones.'
+                : 'Configure your tournament structure and generate matches.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {tournament.format === 'GROUP_KNOCKOUT' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Number of Groups</Label>
+                <Select
+                  value={String(groupCount)}
+                  onValueChange={(v) => {
+                    setGroupCount(Number(v))
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n} Groups
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Teams Advancing Per Group</Label>
+                <Select
+                  value={String(advancingPerGroup)}
+                  onValueChange={(v) => {
+                    setAdvancingPerGroup(Number(v))
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        Top {n} {n === 1 ? 'team' : 'teams'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Team Distribution</Label>
+                <Select
+                  value={useSeeding ? 'seeded' : 'random'}
+                  onValueChange={(v) => {
+                    setUseSeeding(v === 'seeded')
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="seeded">Seeded (pot-based)</SelectItem>
+                    <SelectItem value="random">Random</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {useSeeding
+                    ? 'Top seeds placed in different groups (e.g., seeds 1 & 2 never in same group)'
+                    : 'Teams randomly shuffled into groups'}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-muted p-3 text-sm">
+                <p className="font-medium">Preview:</p>
+                <p className="text-muted-foreground">
+                  {groupCount} groups with ~{Math.ceil(tournament.teams.length / groupCount)} teams
+                  each
+                </p>
+                <p className="text-muted-foreground">
+                  {groupCount * advancingPerGroup} teams advance to knockout stage
+                </p>
+              </div>
+            </div>
+          )}
+
+          {tournament.format !== 'GROUP_KNOCKOUT' && (
+            <div className="space-y-4">
+              {tournament.format === 'SINGLE_ELIMINATION' && (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Use Seeding</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Apply seeded distribution when generating bracket
+                    </p>
+                  </div>
+                  <Switch checked={useSeeding} onCheckedChange={setUseSeeding} />
+                </div>
+              )}
+              <div className="rounded-lg bg-muted p-3 text-sm">
+                <p className="text-muted-foreground">
+                  Format: {tournament.format.replace(/_/g, ' ')}
+                </p>
+                <p className="text-muted-foreground">{tournament.teams.length} teams</p>
+                {tournament.format === 'SINGLE_ELIMINATION' && (
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {useSeeding
+                      ? 'Top seeds will receive byes if fewer teams than bracket slots. Higher seeds face lower seeds.'
+                      : 'Teams will be randomly placed in the bracket.'}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGenerateMatchesDialogOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void onGenerateMatchesConfirm()}
+              disabled={generateMatchesMutation.isPending}
+            >
+              {generateMatchesMutation.isPending ? 'Generating...' : 'Generate Matches'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Seed Editor Dialog */}
+      <Dialog open={seedEditorOpen} onOpenChange={setSeedEditorOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Seeds</DialogTitle>
+            <DialogDescription>
+              Drag teams to reorder. Position determines seed (1 = top seed).
+            </DialogDescription>
+          </DialogHeader>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={editingSeeds.map((t) => t.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {editingSeeds.map((team, index) => (
+                  <SortableTeamItem
+                    key={team.id}
+                    id={team.id}
+                    name={team.name}
+                    index={index}
+                    onMoveUp={() => {
+                      moveTeamUp(index)
+                    }}
+                    onMoveDown={() => {
+                      moveTeamDown(index)
+                    }}
+                    isFirst={index === 0}
+                    isLast={index === editingSeeds.length - 1}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSeedEditorOpen(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void onSaveSeedsConfirm()}
+              disabled={updateSeedsMutation.isPending}
+            >
+              {updateSeedsMutation.isPending ? 'Saving...' : 'Save Seeds'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

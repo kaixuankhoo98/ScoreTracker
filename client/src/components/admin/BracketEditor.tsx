@@ -22,6 +22,7 @@ interface Match {
   round: number
   matchNumber: number
   winner?: Team | null
+  isBye?: boolean
 }
 
 interface SportConfig {

@@ -126,3 +126,16 @@
       sans-serif;
   }
 }
+
+/* React Brackets library overrides for rounded corners */
+.bracket-seed-item {
+  border-radius: var(--radius-md) !important;
+  overflow: hidden !important;
+}
+
+/* Ensure nested Links also clip content */
+.bracket-seed-item > a {
+  display: block;
+  border-radius: inherit;
+  overflow: hidden;
+}

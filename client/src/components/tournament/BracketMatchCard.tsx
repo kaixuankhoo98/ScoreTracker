@@ -26,6 +26,7 @@ interface Match {
   awayPeriodScores?: number[]
   status: string
   winner?: Team | null
+  isBye?: boolean
 }
 
 interface SportConfig {
@@ -132,7 +133,9 @@ export function BracketMatchCard({
           winner ? 'font-semibold text-green-600 dark:text-green-400' : ''
         }`}
       >
-        <span className="truncate text-sm">{team?.shortName ?? team?.name ?? 'TBD'}</span>
+        <span className="truncate text-sm">
+          {team?.shortName ?? team?.name ?? (match.isBye === true ? 'BYE' : 'TBD')}
+        </span>
         <span className={`ml-2 text-sm font-medium ${isLive ? 'text-red-500' : ''}`}>
           {getScore(side)}
         </span>

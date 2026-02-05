@@ -1,5 +1,20 @@
 import type { MatchStage, TournamentFormat } from './schemas.js'
 
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const temp = result[i]
+    const swap = result[j]
+    if (temp !== undefined && swap !== undefined) {
+      result[i] = swap
+      result[j] = temp
+    }
+  }
+  return result
+}
+
 // Match generation result
 export interface GeneratedMatch {
   homeTeamIndex: number | null // Index into teams array, null for TBD
@@ -8,6 +23,7 @@ export interface GeneratedMatch {
   matchNumber: number
   stage: MatchStage
   groupIndex?: number // For group stage matches
+  isBye?: boolean // True for bye matches where team auto-advances
 }
 
 // Group assignment result
@@ -69,23 +85,39 @@ export function generateRoundRobin(teamCount: number): GeneratedTournament {
 }
 
 // Single elimination bracket
-export function generateSingleElimination(teamCount: number): GeneratedTournament {
+export function generateSingleElimination(
+  teamCount: number,
+  useSeeding = true
+): GeneratedTournament {
   const matches: GeneratedMatch[] = []
 
   // Calculate bracket size (next power of 2)
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(teamCount)))
   const rounds = Math.ceil(Math.log2(bracketSize))
 
-  // Seed teams with byes going to top seeds
-  // Team indices 0, 1, 2... are in seed order
-  const seededPositions = generateSeededBracket(bracketSize)
+  // Get bracket positions - either seeded or randomized
+  let bracketPositions: number[]
+  if (useSeeding) {
+    // Seed teams with byes going to top seeds
+    // Team indices 0, 1, 2... are in seed order
+    bracketPositions = generateSeededBracket(bracketSize)
+  } else {
+    // Random positions - shuffle team indices then fill remaining with nulls
+    const teamIndices = shuffleArray(Array.from({ length: teamCount }, (_, i) => i))
+    // Create bracket positions randomly assigning teams
+    bracketPositions = Array.from({ length: bracketSize }, (_, i) =>
+      i < teamCount ? (teamIndices[i] ?? i) : i
+    )
+    // Shuffle the entire bracket to randomize bye positions too
+    bracketPositions = shuffleArray(bracketPositions)
+  }
 
   let matchNumber = 1
 
   // Generate first round matches
   for (let i = 0; i < bracketSize / 2; i++) {
-    const pos1 = seededPositions[i * 2]
-    const pos2 = seededPositions[i * 2 + 1]
+    const pos1 = bracketPositions[i * 2]
+    const pos2 = bracketPositions[i * 2 + 1]
 
     const team1 = pos1 !== undefined && pos1 < teamCount ? pos1 : null
     const team2 = pos2 !== undefined && pos2 < teamCount ? pos2 : null
@@ -93,12 +125,16 @@ export function generateSingleElimination(teamCount: number): GeneratedTournamen
     // Determine stage based on rounds
     const stage = getStageForRound(1, rounds)
 
+    // Check if this is a bye match (one team exists, other is null)
+    const isBye = (team1 !== null && team2 === null) || (team1 === null && team2 !== null)
+
     matches.push({
       homeTeamIndex: team1,
       awayTeamIndex: team2,
       round: 1,
       matchNumber: matchNumber++,
       stage,
+      isBye,
     })
   }
 
@@ -128,14 +164,13 @@ export function generateSingleElimination(teamCount: number): GeneratedTournamen
 export function generateGroupKnockout(
   teamCount: number,
   groupCount: number,
-  advancingPerGroup = 2
+  advancingPerGroup = 2,
+  useSeeding = true
 ): GeneratedTournament {
   const groups: GeneratedGroup[] = []
   const matches: GeneratedMatch[] = []
 
-  // Distribute teams to groups (snake draft style for balanced groups)
-  const teamIndices = Array.from({ length: teamCount }, (_, i) => i)
-
+  // Initialize groups
   for (let g = 0; g < groupCount; g++) {
     groups.push({
       name: `Group ${String.fromCharCode(65 + g)}`, // A, B, C...
@@ -143,19 +178,47 @@ export function generateGroupKnockout(
     })
   }
 
-  // Snake draft assignment
-  let direction = 1
-  let groupIndex = 0
-  for (const teamIndex of teamIndices) {
-    const group = groups[groupIndex]
-    if (group) {
-      group.teamIndices.push(teamIndex)
-    }
+  let teamIndices = Array.from({ length: teamCount }, (_, i) => i)
 
-    groupIndex += direction
-    if (groupIndex >= groupCount || groupIndex < 0) {
-      direction *= -1
-      groupIndex += direction
+  if (useSeeding) {
+    // Pot-based distribution (like World Cup/Champions League draws)
+    // Teams are already sorted by seed (index 0 = seed 1, index 1 = seed 2, etc.)
+    // Divide into pots where pot size = group count
+    // Each group gets exactly one team from each pot
+    //
+    // Example: 8 teams, 2 groups
+    // Pot 1: Seeds 1-2 → Group A gets seed 1, Group B gets seed 2
+    // Pot 2: Seeds 3-4 → Group A gets seed 3, Group B gets seed 4
+    // Pot 3: Seeds 5-6 → Group A gets seed 5, Group B gets seed 6
+    // Pot 4: Seeds 7-8 → Group A gets seed 7, Group B gets seed 8
+    //
+    // Result: Group A = [1,3,5,7], Group B = [2,4,6,8]
+    // This ensures top seeds never meet in group stage
+
+    for (let i = 0; i < teamIndices.length; i++) {
+      const teamIndex = teamIndices[i]
+      if (teamIndex === undefined) continue
+
+      // Determine which group this team goes to based on pot position
+      const groupIndex = i % groupCount
+      const group = groups[groupIndex]
+      if (group) {
+        group.teamIndices.push(teamIndex)
+      }
+    }
+  } else {
+    // Random distribution - shuffle teams then distribute evenly
+    teamIndices = shuffleArray(teamIndices)
+
+    for (let i = 0; i < teamIndices.length; i++) {
+      const teamIndex = teamIndices[i]
+      if (teamIndex === undefined) continue
+
+      const groupIndex = i % groupCount
+      const group = groups[groupIndex]
+      if (group) {
+        group.teamIndices.push(teamIndex)
+      }
     }
   }
 
@@ -245,24 +308,30 @@ export function generateTournamentMatches(
   options?: {
     groupCount?: number
     advancingPerGroup?: number
+    useSeeding?: boolean
   }
 ): GeneratedTournament {
   switch (format) {
     case 'ROUND_ROBIN':
       return generateRoundRobin(teamCount)
 
-    case 'SINGLE_ELIMINATION':
-      return generateSingleElimination(teamCount)
+    case 'SINGLE_ELIMINATION': {
+      const useSeeding = options?.useSeeding ?? true
+      return generateSingleElimination(teamCount, useSeeding)
+    }
 
-    case 'DOUBLE_ELIMINATION':
+    case 'DOUBLE_ELIMINATION': {
       // For MVP, treat as single elimination
       // Double elimination would need losers bracket
-      return generateSingleElimination(teamCount)
+      const useSeeding = options?.useSeeding ?? true
+      return generateSingleElimination(teamCount, useSeeding)
+    }
 
     case 'GROUP_KNOCKOUT': {
       const groupCount = options?.groupCount ?? Math.max(2, Math.floor(teamCount / 4))
       const advancingPerGroup = options?.advancingPerGroup ?? 2
-      return generateGroupKnockout(teamCount, groupCount, advancingPerGroup)
+      const useSeeding = options?.useSeeding ?? true
+      return generateGroupKnockout(teamCount, groupCount, advancingPerGroup, useSeeding)
     }
 
     default:
